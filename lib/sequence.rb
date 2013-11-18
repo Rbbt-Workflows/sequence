@@ -104,7 +104,7 @@ module Sequence
   input :positions, :array, "Positions Chr:Position (e.g. 11:533766). Separator can be ':', space or tab. Extra fields are ignored"
   def self.exons_at_genomic_positions(organism, positions)
     chr_positions = {}
-    positions = positions.compact
+    positions = positions.compact.reject{|p| p.empty? }
     positions.each do |position|
       chr, pos = position.split(/[\s:\t]/).values_at 0, 1
       chr.sub!(/chr/,'')
