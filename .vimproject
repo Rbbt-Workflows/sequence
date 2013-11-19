@@ -10,6 +10,11 @@ sequence=/$PWD filter="*.rb *.R *.js *.sass *.haml *.tsv" {
    CLL-1.tsv
   }
  }
+ share=share{
+  rbbt_commands=rbbt_commands filter="*"{
+   bootstrap
+  }
+ }
  www=www {
   main.rb
   views=views {

@@ -1849,7 +1849,6 @@ jobs = []
 %w(Hsa Hsa/jun2011 Hsa/may2009 Hsa/jan2013).each do |organism|
     params = { :mutations => mutations[organism].dup, :organism => organism }
     job = Sequence.job(:mutated_isoforms_for_genomic_mutations, "BOOTSTRAP", params)
-    ddd params if job.error?
     
     job.clean
     jobs << job
