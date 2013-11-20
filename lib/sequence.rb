@@ -186,6 +186,12 @@ module Sequence
   input :organism, :string, "Organism code", "Hsa"
   input :positions, :array, "Positions Chr:Position (e.g. 11:533766). Separator can be ':', space or tab. Extra fields are ignored"
   def self.exon_junctions_at_genomic_positions(organism, positions)
+    raise ParameterException, "No 'positions' specified" if positions.nil?
+
+    tsv = TSV.setup({}, :key_field => "Genomic Position", :fields => ["Exon Junction"], :type => :flat, :namespace => organism, :unnamed => true)
+
+    positions = positions.reject{|p| p.nil? or p.empty?}
+
     chr_positions = {}
     positions.each do |position|
       chr, pos = position.strip.split(/[\s:\t]/).values_at 0, 1
@@ -199,7 +205,6 @@ module Sequence
       chr_exon_junctions[chr] = exon_junctions_at_chr_positions(organism, chr, list)
     end
 
-    tsv = TSV.setup({}, :key_field => "Genomic Position", :fields => ["Exon Junction"], :type => :flat, :namespace => organism, :unnamed => true)
     positions.each do |position|
       chr, pos = position.strip.split(/[\s:\t]/).values_at 0, 1
       chr.sub!(/chr/,'')

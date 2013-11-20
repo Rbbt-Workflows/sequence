@@ -1848,8 +1848,18 @@ mutations["Hsa"] = mutations_hg19
 jobs = []
 %w(Hsa Hsa/jun2011 Hsa/may2009 Hsa/jan2013).each do |organism|
     params = { :mutations => mutations[organism].dup, :organism => organism }
+
     job = Sequence.job(:mutated_isoforms_for_genomic_mutations, "BOOTSTRAP", params)
-    
+    job.clean
+    jobs << job
+
+    params = { :positions => mutations[organism].dup, :organism => organism }
+    job = Sequence.job(:exon_junctions_at_genomic_positions, "BOOTSTRAP", params)
+    job.clean
+    jobs << job
+
+    params = { :positions => mutations[organism].dup, :organism => organism }
+    job = Sequence.job(:genes_at_genomic_positions, "BOOTSTRAP", params)
     job.clean
     jobs << job
 end
