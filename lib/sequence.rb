@@ -470,9 +470,10 @@ module Sequence
           [transcript, change] * ":"
         else
           protein = transcript_to_protein[transcript]
+          next if protein.nil? or protein.empty?
           [protein, change] * ":"
         end
-      }
+      }.compact
     end
 
     mutated_isoforms
