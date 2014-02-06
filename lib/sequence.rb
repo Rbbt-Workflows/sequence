@@ -211,6 +211,9 @@ module Sequence
       tsv[position] = chr_exon_junctions[chr].shift.split("|")
     end
 
+    tsv.with_unnamed do
+      tsv = tsv.select("Exon Junction"){|ej| ej.any?}
+    end
     tsv
   end
   task :exon_junctions_at_genomic_positions => :tsv
