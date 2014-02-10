@@ -10,6 +10,15 @@ module Sequence
     @@gene_position[key]
   end
 
+  def self.gene_strand_index(organism)
+    key = organism
+    @@gene_strand ||= {}
+    if @@gene_strand[key].nil?
+      @@gene_strand[key] = Organism.gene_positions(organism).tsv :fields => ["Strand"], :type => :single, :persist => true, :unnamed => true
+    end
+    @@gene_strand[key]
+  end
+
   def self.exon_position_index(organism, chromosome)
     key = [organism, chromosome]
     @@exon_position ||= {}
@@ -91,6 +100,19 @@ module Sequence
       @@transcript_phase[key] = Organism.transcript_phase(organism).tsv(:single, :persist => true, :unnamed => true)
     end
     @@transcript_phase[key]
+  end
+
+  def self.transcript_protein(organism)
+    key = organism
+    @@transcript_protein ||= {}
+    if @@transcript_protein[key].nil?
+      @@transcript_protein[key] = Organism.transcripts(organism).tsv(:persist => true, :fields => ["Ensembl Protein ID"], :type => :single, :unnamed => true)
+    end
+    @@transcript_protein[key]
+  end
+
+  def self.chromosome_file(organism, chromosome)
+    Organism[File.join(organism, "chromosome_#{chromosome}")].produce.find
   end
 
   def self.snp_position_index(organism, chromosome)
