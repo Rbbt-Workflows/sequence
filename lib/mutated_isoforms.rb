@@ -9,7 +9,7 @@ module Sequence
   input :mutations, :array, "Mutation Chr:Position:Mut (e.g. 19:54646887:A). Separator can be ':', space or tab. Extra fields are ignored"
   def self.mutated_isoforms_for_genomic_mutations(organism, watson, mutations)
     transcript_offsets = transcript_offsets_for_genomic_positions(organism, mutations)
-    transcript_to_protein = transcript_to_protein(organism)
+    transcript_to_protein = transcript_protein(organism)
 
     mutated_isoforms = TSV.setup({}, :type => :flat, :key_field => "Genomic Mutation", :fields => ["Mutated Isoform"], :namespace => organism, :unnamed => true)
 
