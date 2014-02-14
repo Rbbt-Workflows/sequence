@@ -9,6 +9,7 @@ sequence=/$PWD filter="*.rb *.R *.js *.sass *.haml *.tsv" {
   transcripts.rb
   mutated_isoforms.rb
   snps.rb
+  liftover.rb
  }
  share=share{
   rbbt_commands=rbbt_commands filter="*"{

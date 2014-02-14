@@ -1,6 +1,6 @@
+# Note: This part is obsolete, check COSMIC, DbSNP and Genomes1000 in
+# rbbt-sources
 module Sequence
-
-  #{{{ SNPs
 
   desc "Identify known SNPs in a chromosome"
   input :organism, :string, "Organism code", "Hsa"

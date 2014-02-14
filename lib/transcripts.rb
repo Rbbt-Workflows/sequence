@@ -1,7 +1,5 @@
 module Sequence
 
-  #{{{ TRANSCRIPTS
-
   desc "Transcript offsets of genomic prositions. transcript:offset:strand"
   input :organism, :string, "Organism code", "Hsa"
   input :positions, :array, "Mutation Chr:Position. Separator can be ':', space or tab. Extra fields are ignored"

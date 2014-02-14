@@ -1,7 +1,6 @@
 require 'bio'
 
 module Sequence
-  #{{{ MUTATED ISOFORMS
 
   desc "Mutated protein isoforms"
   input :organism, :string, "Organism code", "Hsa"

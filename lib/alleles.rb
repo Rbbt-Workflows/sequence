@@ -1,7 +1,5 @@
 module Sequence
 
-  #{{{ REFERENCE ALLELES
-
   desc "Change mutation reference strand from 'gene' strand to 'watson' strand"
   input :organism, :string, "Organism code", "Hsa"
   input :mutations, :array, "Mutation Chr:Position:Mut (e.g. 19:54646887:A). Separator can be ':', space or tab. Extra fields are ignored"
