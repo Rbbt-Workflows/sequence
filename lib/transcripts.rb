@@ -1,16 +1,19 @@
+require 'parallel'
 module Sequence
 
   desc "Transcript offsets of genomic prositions. transcript:offset:strand"
   input :organism, :string, "Organism code", "Hsa"
   input :positions, :array, "Mutation Chr:Position. Separator can be ':', space or tab. Extra fields are ignored"
   def self.transcript_offsets_for_genomic_positions(organism, positions)
+    log :exons, "Find exons at genomic positions"
     exons = exons_at_genomic_positions(organism, positions)
+
     exon_info = exon_info(organism) 
     exon_transcript_offsets = exon_transcript_offsets(organism) 
-    exon_transcript_offsets.unnamed = true
 
     field_positions = ["Exon Strand", "Exon Chr Start", "Exon Chr End"].collect{|field| exon_info.identify_field field}
 
+    log :exon_offsets, "Find offsets inside exons"
     exon_offsets = exons.collect do |position, exons|
       chr, pos = position.split(/[\s:\t]/).values_at 0, 1
       chr.sub!(/chr/,'')
@@ -28,9 +31,10 @@ module Sequence
       [position, list]
     end
 
-    tsv = TSV.setup({}, :key_field => "Genomic Position", :fields => ["Ensembl Transcrip ID:Offset:Strand"], :type => :flat, :namespace => organism, :unnamed => true)
+    tsv = {}
     
     exon_transcript_offsets.unnamed = false
+    log :transcript_offsets, "Find offsets inside transcripts"
     exon_offsets.each do |position, list|
       next if list.empty?
       offsets = []
@@ -41,8 +45,8 @@ module Sequence
       end
       tsv[position] = offsets
     end
-    tsv
 
+    TSV.setup(tsv, :key_field => "Genomic Position", :fields => ["Ensembl Transcrip ID:Offset:Strand"], :type => :flat, :namespace => organism, :unnamed => true)
   end
   task :transcript_offsets_for_genomic_positions => :tsv
   export_synchronous :transcript_offsets_for_genomic_positions
@@ -54,16 +58,17 @@ module Sequence
   input :transcript, :string, "Ensembl Transcript ID"
   input :offset, :integer, "Offset inside transcript"
   def self.codon_at_transcript_position(organism, transcript, offset)
-    transcript_sequence = transcript_sequence(organism) 
+    transcript_sequence = transcript_sequence(organism)
     transcript_5utr = transcript_5utr(organism) 
     transcript_3utr = transcript_3utr(organism) 
     transcript_phase = transcript_phase(organism)
 
     utr5 = transcript_5utr[transcript]
       
-    if utr5.nil? or utr5 == 0
+    if utr5.nil? or utr5 == 0 
       phase = transcript_phase[transcript]
       raise "No UTR5 and no phase for transcript: #{ transcript }" if phase.nil?
+      phase = phase.to_i
       raise "No UTR5 but phase is -1: #{ transcript }" if phase == -1
       utr5 = - phase
     else
@@ -73,7 +78,7 @@ module Sequence
     return "UTR5" if utr5 > offset
 
     sequence = transcript_sequence[transcript]
-    raise "Sequence for transcript was missing: #{ transcript }" if sequence.nil? if sequence.nil?
+    raise "Sequence for transcript was missing: #{ transcript }" if sequence.nil? 
 
     ccds_offset = offset - utr5
     utr3 = transcript_3utr[transcript].to_i

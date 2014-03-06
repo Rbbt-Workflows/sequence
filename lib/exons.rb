@@ -1,3 +1,4 @@
+require 'parallel'
 module Sequence
 
   desc "Find exons at particular positions in a chromosome. Multiple values separated by '|'"
@@ -29,12 +30,13 @@ module Sequence
       chr_exons[chr] = exons_at_chr_positions(organism, chr, list)
     end
 
-    tsv = TSV.setup({}, :key_field => "Genomic Position", :fields => ["Ensembl Exon ID"], :type => :flat, :namespace => organism)
-    positions.collect do |position|
+    tsv = {}
+    positions.each do |position|
       chr, pos = position.split(/[\s:\t]/).values_at 0, 1
       chr.sub!(/chr/,'')
       tsv[position] = chr_exons[chr].shift.split("|")
     end
+    TSV.setup(tsv, :key_field => "Genomic Position", :fields => ["Ensembl Exon ID"], :type => :flat, :namespace => organism)
     tsv
   end
   task :exons_at_genomic_positions => :tsv
