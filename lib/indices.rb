@@ -111,6 +111,27 @@ module Sequence
     CACHE[:transcript_protein][key]
   end
 
+  def self.transcript_info(organism)
+
+    key = organism
+    CACHE[:transcript_info] ||= {}
+    if CACHE[:transcript_info][key].nil?
+      CACHE[:transcript_info][key] = Persist.persist_tsv(Organism.transcripts(organism), "Transcript Info", {:organism => organism},{:persist => true, :serializer => :list}) do |data|
+        tsv = Organism.transcript_5utr(organism).tsv(:type => :single, :unnamed => true, :cast => :to_i)
+        tsv.attach Organism.transcript_3utr(organism).tsv(:type => :single, :unnamed => true, :cast => :to_i)
+        tsv.attach Organism.transcript_phase(organism).tsv(:type => :single, :unnamed => true, :cast => :to_i)
+
+        tsv.annotate data
+        data.serializer = :integer_array
+        ddd data.serializer
+        ddd data.serializer_module
+        tsv.each{|k,v| data[k] = v}
+        data
+      end
+    end
+    CACHE[:transcript_info][key]
+  end
+
   def self.chromosome_file(organism, chromosome)
     Organism[File.join(organism, "chromosome_#{chromosome}")].produce.find
   end

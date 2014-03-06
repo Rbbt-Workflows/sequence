@@ -131,75 +131,94 @@ module Sequence
     end
   end
 
+
+
+
+
+
   desc "Mutated protein isoforms"
   input :organism, :string, "Organism code", "Hsa"
   input :watson, :boolean, "Alleles reported always in the Watson strand (as opposed to the gene's strand)", true
   input :mutations, :array, "Mutation Chr:Position:Mut (e.g. 19:54646887:A). Separator can be ':', space or tab. Extra fields are ignored"
-  def self.mutated_isoforms_for_genomic_mutations_pp(organism, watson, mutations)
+  task :mutated_isoforms_for_genomic_mutations_pp => :tsv do |organism, watson, mutations|
 
     log :transcript_offsets, "Finding transcript and offsets for mutations"
-    transcript_offsets = transcript_offsets_for_genomic_positions(organism, mutations) 
-    transcript_to_protein = transcript_protein(organism)
+    transcript_offsets = Sequence.transcript_offsets_for_genomic_positions(organism, mutations) 
+    transcript_to_protein = Sequence.transcript_protein(organism)
 
     mutated_isoforms = {}
 
-    log :translating, "Translating changes in transcript offsets into changes in proteins"
-    #transcript_offsets.to_hash.each do |mutation, list|
-    transcript_offsets.to_hash.each do |mutation, list|
-      chr, pos, mut_str = mutation.split ":"
-      chr.sub!(/chr/,'')
-      isoforms = []
-      next if mut_str.nil?
-      mut_str.split(',').each do |mut|
-        alleles = self.alleles mut
+    TmpFile.with_file do |tmpout|
+      Open.write(tmpout) do |out|
+        out.puts TSV.header_lines("Genomic Mutation", ["Mutated Isoform"], :type => :flat, :namespace => organism, :unnamed => true)
 
-        list.collect{|t| t.split ":"}.each do |transcript, offset, strand|
-          offset = offset.to_i
-          begin
-            codon = codon_at_transcript_position(organism, transcript, offset)
-            case codon
-            when "UTR5", "UTR3"
-              isoforms << [transcript, codon]
-            else
-              triplet, offset, pos = codon.split ":"
-              next if not triplet.length === 3
-              original = Misc::CODON_TABLE[triplet]
-              alleles.each do |allele|
-                case allele
-                when "Indel"
-                  isoforms << [transcript, [original, pos.to_i + 1, "Indel"] * ""]
-                when "FrameShift"
-                  isoforms << [transcript, [original, pos.to_i + 1, "FrameShift"] * ""]
-                else
-                  allele = Misc::BASE2COMPLEMENT[allele] if watson and strand.to_i == -1
-                  triplet[offset.to_i] = allele 
-                  #new = Bio::Sequence::NA.new(triplet).translate
-                  new = Misc::CODON_TABLE[triplet]
-                  isoforms << [transcript, [original, pos.to_i + 1, new] * ""]
+        log :translating, "Translating changes in transcript offsets into changes in proteins"
+        #transcript_offsets.to_hash.each do |mutation, list|
+        #Misc.profile do
+        transcript_offsets.monitor = true
+        transcript_offsets.through do |mutation, list|
+          chr, pos, mut_str = mutation.split ":"
+          chr.sub!(/chr/,'')
+          isoforms = []
+          next if mut_str.nil?
+
+          mis = []
+          mut_str.split(',').each do |mut|
+            alleles = Sequence.alleles mut
+
+            #list.collect{|t| t.split ":" }.each do |transcript, offset, strand|
+            list.each do |t|
+              transcript, offset, strand = t.split ":"
+              protein = transcript_to_protein[transcript]
+              next if protein.nil?
+              offset = offset.to_i
+
+              begin
+                codon = Sequence.codon_at_transcript_position(organism, transcript, offset)
+
+                case codon
+
+                when "UTR5", "UTR3"
+                  #isoforms << [transcript, codon]
+                  mis << [transcript, codon] * ":"
+
+                else # Protein mutation
+                  triplet, offset, pos = codon.split ":"
+                  next if not triplet.length == 3
+                  original = Misc::CODON_TABLE[triplet]
+                  next if alleles.empty?
+                  pos = pos.to_i
+                  alleles.each do |allele|
+                    change = case allele
+                            when "Indel"
+                              [original, pos + 1, "Indel"] * ""
+                            when "FrameShift"
+                              [original, pos + 1, "FrameShift"] * ""
+                            else
+                              allele = Misc::BASE2COMPLEMENT[allele] if watson and strand == "-1"
+                              triplet[offset.to_i] = allele 
+                              new = Misc::CODON_TABLE[triplet]
+                              [original, pos + 1, new] * ""
+                            end
+                    mis << [protein, change] * ":"
+                  end
                 end
+              rescue TranscriptError
+                Log.debug{$!.message}
               end
             end
-          rescue
-            Log.debug{$!.message}
           end
+
+          mis.unshift(mutation)
+          out.puts mis * "\t"
         end
       end
-
-      mutated_isoforms[mutation] = isoforms.collect{|transcript, change| 
-        if change =~ /^UTR/
-          [transcript, change] * ":"
-        else
-          protein = transcript_to_protein[transcript]
-          next if protein.nil? or protein.empty?
-          [protein, change] * ":"
-        end
-      }.compact
+      log :saving, "Saving results"
+      FileUtils.mv tmpout, path
     end
+    #end
 
-    log :saving, "Saving results"
-
-    TSV.setup(mutated_isoforms, :type => :flat, :key_field => "Genomic Mutation", :fields => ["Mutated Isoform"], :namespace => organism, :unnamed => true)
+    nil
   end
-  task :mutated_isoforms_for_genomic_mutations_pp => :tsv
   export_synchronous :mutated_isoforms_for_genomic_mutations_pp
 end
