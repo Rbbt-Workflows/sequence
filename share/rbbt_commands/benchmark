@@ -1,0 +1,35 @@
+#!/usr/bin/env ruby
+
+require 'rbbt-util'
+require 'rbbt/workflow'
+
+Workflow.require_workflow "Sequence"
+Workflow.require_workflow "Annovar"
+
+options = SOPT.get('-m--method*')
+
+file, *sizes = ARGV
+
+log = Log.severity
+sizes.each do |size|
+  size = size.to_i
+
+  if options[:method].nil? or options[:method] == "annovar"
+   Log.info Log.color(:red, "annovar") + " " + Log.color(:blue, size.to_s)
+   cmd = "head -n #{size} #{file} | drbbt task Annovar analysis -g - -as '\\n' -cl -pn --log #{log}"
+   Log.info cmd
+   start = Time.now
+   CMD.cmd(cmd).read
+   Log.info Log.color(:red, "annovar") + " " + Log.color(:blue, size.to_s) + " " + Log.color(:yellow, (Time.now - start).to_s)
+  end
+
+  if options[:method].nil? or options[:method] == "Sequence"
+   Log.info Log.color(:red, "Sequence") + " " + Log.color(:blue, size.to_s)
+   cmd = "head -n #{size} #{file} | drbbt task Sequence mutated_isoforms_for_genomic_mutations_pp --mutations - -w -as '\\n' -cl -pn --log #{log}"
+   Log.info cmd
+   start = Time.now
+   CMD.cmd(cmd).read
+   Log.info Log.color(:red, "Sequence") + " " + Log.color(:blue, size.to_s) + " " + Log.color(:yellow, (Time.now - start).to_s)
+  end
+end
+

@@ -17,7 +17,7 @@ module Sequence
 
     tsv = {}
 
-    log :exon_offsets, "Find offsets inside exons"
+    log :transcript_offsets, "Find offsets inside transcript"
     exon_offsets = exons.to_hash.collect do |position, exons|
       chr, pos = position.split(/[\s:\t]/).values_at 0, 1
       chr.sub!(/chr/,'')

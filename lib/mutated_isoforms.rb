@@ -18,6 +18,7 @@ module Sequence
 
     transcript_offsets.monitor = true
     transcript_offsets.to_hash.each do |mutation, list|
+    #transcript_offsets.pthrough do |mutation, list|
       chr, pos, mut_str = mutation.split ":"
       chr.sub!(/chr/,'')
 
@@ -150,13 +151,18 @@ module Sequence
 
     TmpFile.with_file do |tmpout|
       Open.write(tmpout) do |out|
-        out.puts TSV.header_lines("Genomic Mutation", ["Mutated Isoform"], :type => :flat, :namespace => organism, :unnamed => true)
+        out.puts TSV.header_lines("Genomic Mutation", ["Mutated Isoform"], :type => :flat, :namespace => organism)
+        out.flush
+
+        transcript_offsets.ppthrough_callback do |line|
+          out.puts line
+        end
 
         log :translating, "Translating changes in transcript offsets into changes in proteins"
-        #transcript_offsets.to_hash.each do |mutation, list|
-        #Misc.profile do
+
         transcript_offsets.monitor = true
-        transcript_offsets.through do |mutation, list|
+        transcript_offsets.unnamed = true
+        transcript_offsets.ppthrough(7) do |mutation, list|
           chr, pos, mut_str = mutation.split ":"
           chr.sub!(/chr/,'')
           isoforms = []
@@ -190,16 +196,16 @@ module Sequence
                   pos = pos.to_i
                   alleles.each do |allele|
                     change = case allele
-                            when "Indel"
-                              [original, pos + 1, "Indel"] * ""
-                            when "FrameShift"
-                              [original, pos + 1, "FrameShift"] * ""
-                            else
-                              allele = Misc::BASE2COMPLEMENT[allele] if watson and strand == "-1"
-                              triplet[offset.to_i] = allele 
-                              new = Misc::CODON_TABLE[triplet]
-                              [original, pos + 1, new] * ""
-                            end
+                             when "Indel"
+                               [original, pos + 1, "Indel"] * ""
+                             when "FrameShift"
+                               [original, pos + 1, "FrameShift"] * ""
+                             else
+                               allele = Misc::BASE2COMPLEMENT[allele] if watson and strand == "-1"
+                               triplet[offset.to_i] = allele 
+                               new = Misc::CODON_TABLE[triplet]
+                               [original, pos + 1, new] * ""
+                             end
                     mis << [protein, change] * ":"
                   end
                 end
@@ -208,16 +214,17 @@ module Sequence
               end
             end
           end
+          next if mis.empty?
 
-          mis.unshift(mutation)
-          out.puts mis * "\t"
+          values = mis.unshift(mutation)
+
+          values*"\t"
         end
+        log :saving, "Saving results"
+        FileUtils.mv tmpout, path
+        FileUtils.cp path, "/tmp/foo"
       end
-      log :saving, "Saving results"
-      FileUtils.mv tmpout, path
     end
-    #end
-
     nil
   end
   export_synchronous :mutated_isoforms_for_genomic_mutations_pp
