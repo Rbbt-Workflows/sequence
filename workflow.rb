@@ -95,6 +95,7 @@ module Sequence
 
     TSV.setup(tsv, :key_field => "Genomic Mutation", :fields => ["Mutated Isoform"], :type => :flat, :namespace => organism)
   end
+  export_asynchronous :mutated_isoforms
 end
 
 require 'indices'
