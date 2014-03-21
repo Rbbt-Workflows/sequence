@@ -16,7 +16,7 @@ module Sequence
     key = organism
     CACHE[:gene_strand] ||= {}
     if CACHE[:gene_strand][key].nil?
-      CACHE[:gene_strand][key] = Organism.gene_positions(organism).tsv(:fields => ["Strand"], :type => :single, :persist => true, :unnamed => true).to_hash
+      CACHE[:gene_strand][key] = Organism.gene_positions(organism).tsv(:fields => ["Strand"], :type => :single, :persist => true, :unnamed => true)
     end
     CACHE[:gene_strand][key]
   end
@@ -64,13 +64,14 @@ module Sequence
     if CACHE[:exon_transcript_offsets][key].nil?
       CACHE[:exon_transcript_offsets][key] = Organism.exon_offsets(organism).tsv :persist => true, :serializer => :double, :unnamed => true
     end
+    CACHE[:exon_transcript_offsets][key] 
   end
 
   def self.transcript_sequence(organism)
     key = organism
     CACHE[:transcript_sequence] ||= {}
     if CACHE[:transcript_sequence][key].nil?
-      CACHE[:transcript_sequence][key] = Organism.transcript_sequence(organism).tsv(:single, :persist => true, :unnamed => true).to_hash
+      CACHE[:transcript_sequence][key] = Organism.transcript_sequence(organism).tsv(:single, :persist => true, :unnamed => true)
     end
     CACHE[:transcript_sequence][key]
   end
@@ -79,7 +80,7 @@ module Sequence
     key = organism
     CACHE[:transcript_5utr] ||= {}
     if CACHE[:transcript_5utr][key].nil?
-      CACHE[:transcript_5utr][key] = Organism.transcript_5utr(organism).tsv(:single, :persist => true, :unnamed => true).to_hash
+      CACHE[:transcript_5utr][key] = Organism.transcript_5utr(organism).tsv(:single, :persist => true, :unnamed => true)
     end
     CACHE[:transcript_5utr][key]
   end
@@ -88,7 +89,7 @@ module Sequence
     key = organism
     CACHE[:transcript_3utr] ||= {}
     if CACHE[:transcript_3utr][key].nil?
-      CACHE[:transcript_3utr][key] = Organism.transcript_3utr(organism).tsv(:single, :persist => true, :unnamed => true).to_hash
+      CACHE[:transcript_3utr][key] = Organism.transcript_3utr(organism).tsv(:single, :persist => true, :unnamed => true)
     end
     CACHE[:transcript_3utr][key]
   end
@@ -97,7 +98,7 @@ module Sequence
     key = organism
     CACHE[:transcript_phase] ||= {}
     if CACHE[:transcript_phase][key].nil?
-      CACHE[:transcript_phase][key] = Organism.transcript_phase(organism).tsv(:single, :persist => true, :unnamed => true, :cast => nil).to_hash
+      CACHE[:transcript_phase][key] = Organism.transcript_phase(organism).tsv(:single, :persist => true, :unnamed => true, :cast => nil)
     end
     CACHE[:transcript_phase][key]
   end
@@ -106,7 +107,7 @@ module Sequence
     key = organism
     CACHE[:transcript_protein] ||= {}
     if CACHE[:transcript_protein][key].nil?
-      CACHE[:transcript_protein][key] = Organism.transcripts(organism).tsv(:persist => true, :fields => ["Ensembl Protein ID"], :type => :single, :unnamed => true).to_hash
+      CACHE[:transcript_protein][key] = Organism.transcripts(organism).tsv(:persist => true, :fields => ["Ensembl Protein ID"], :type => :single, :unnamed => true)
     end
     CACHE[:transcript_protein][key]
   end

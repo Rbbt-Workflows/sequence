@@ -15,7 +15,7 @@ sizes.each do |size|
   size = size.to_i
 
   if options[:method].nil? or options[:method] == "annovar"
-   Log.info Log.color(:red, "annovar") + " " + Log.color(:blue, size.to_s)
+   Log.info "annovar" + " " +  size.to_s
    cmd = "head -n #{size} #{file} | drbbt task Annovar analysis -g - -as '\\n' -cl -pn --log #{log}"
    Log.info cmd
    start = Time.now
@@ -24,8 +24,8 @@ sizes.each do |size|
   end
 
   if options[:method].nil? or options[:method] == "Sequence"
-   Log.info Log.color(:red, "Sequence") + " " + Log.color(:blue, size.to_s)
-   cmd = "head -n #{size} #{file} | drbbt task Sequence mutated_isoforms_for_genomic_mutations_pp --mutations - -w -as '\\n' -cl -pn --log #{log}"
+   Log.info "Sequence" + " " +  size.to_s
+   cmd = "head -n #{size} #{file} | drbbt task Sequence mutated_isoforms --genomic_mutations - -w -as '\\n' -cl -pn --log #{log}"
    Log.info cmd
    start = Time.now
    CMD.cmd(cmd).read
