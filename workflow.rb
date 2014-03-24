@@ -10,6 +10,17 @@ Log.info "Loading Structure with #{ $cpus.inspect }" unless $cpus.nil?
 module Sequence
   extend Workflow
 
+  input :file, :text, "VCF file", nil
+  input :threshold, :integer, "Quality threshold", 200
+  task :vcf => :array do |file,threshold|
+    mutations = []
+    TSV.traverse Sequence::VCF.open_stream(StringIO.new(file)), :fields => ["Quality"], :type => :single, :cast => :to_f, :into => mutations do |mutation,quality|
+      mutation if quality > threshold
+    end
+    mutations.compact
+  end
+  export_asynchronous :vcf
+
   input :genomic_mutations, :array, "chr:pos:mutation"
   input :organism, :string, "Organism code", "Hsa"
   input :watson, :boolean, "Mutations all reported on the watson (forward) strand as opposed to the gene strand", true
@@ -105,3 +116,4 @@ require 'exons'
 require 'transcripts'
 require 'mutated_isoforms'
 require 'liftover'
+require 'vcf'
