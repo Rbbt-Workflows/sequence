@@ -107,6 +107,54 @@ module Sequence
     TSV.setup(tsv, :key_field => "Genomic Mutation", :fields => ["Mutated Isoform"], :type => :flat, :namespace => organism)
   end
   export_asynchronous :mutated_isoforms
+
+
+  dep :genes_at_genomic_positions
+  input :positions, :array, "Genomic positions", nil
+  task :binomial_significance => :tsv do |positions|
+    begin
+      require 'rsruby'
+    rescue
+      raise "You must install rsruby gem to run this task"
+    end
+
+    position_genes = step(:genes_at_genomic_positions).load
+    organism = step(:genes_at_genomic_positions).info[:inputs][:organism]
+    num_mutations = step(:genes_at_genomic_positions).info[:input_size]
+
+    tsv = TSV.setup({}, :key_field => "Ensembl Gene ID", :fields => ["Matches", "Bases", "Frequency", "p.value"], :namespace => organism)
+
+    genes = Set.new
+    gene_mutations = {}
+    num_mutations = positions.length
+    TSV.traverse positions  do |position|
+      g = position_genes[position]
+      next if g.nil?
+      g.each do |gene|
+        genes << gene
+        gene_mutations[gene] ||= []
+        gene_mutations[gene] << position
+      end
+    end
+
+    total_bases = Organism.gene_list_exon_bases(genes.to_a)
+    global_frequency = num_mutations.to_f / total_bases
+
+    gene2exon_size = Misc.process_to_hash(genes.to_a){|genes| genes.collect{|gene| Organism.gene_list_exon_bases([gene]) }}
+
+    genes.each do |gene|
+      mutations = gene_mutations[gene]
+      next if mutations.empty?
+      matches = mutations.length
+      exon_bases = gene2exon_size[gene]
+      next if exon_bases == 0
+      frequency = matches.to_f / exon_bases
+      pvalue = RSRuby.instance.binom_test(matches, exon_bases, global_frequency, 'greater')["p.value"]
+      tsv[gene] = [matches, exon_bases, frequency, pvalue]
+    end
+
+    tsv
+  end
 end
 
 require 'indices'
