@@ -122,7 +122,7 @@ module Sequence
     organism = step(:genes_at_genomic_positions).info[:inputs][:organism]
     num_mutations = step(:genes_at_genomic_positions).info[:input_size]
 
-    tsv = TSV.setup({}, :key_field => "Ensembl Gene ID", :fields => ["Matches", "Bases", "Frequency", "p.value"], :namespace => organism)
+    tsv = TSV.setup({}, :key_field => "Ensembl Gene ID", :fields => ["Matches", "Bases", "Frequency", "p.value"], :namespace => organism, :type => :list)
 
     genes = Set.new
     gene_mutations = {}
