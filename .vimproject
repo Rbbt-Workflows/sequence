@@ -3,11 +3,18 @@ sequence=/$PWD filter="*.rb *.R *.js *.sass *.haml *.tsv" {
  workflow.md
  lib=lib {
   indices.rb
+
   alleles.rb
   genes.rb
   exons.rb
   transcripts.rb
+
   mutated_isoforms.rb
+
+  mutations.rb
+
+  consequence.rb
+
   snps.rb
   liftover.rb
   vcf.rb

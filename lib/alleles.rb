@@ -66,11 +66,13 @@ module Sequence
   input :organism, :string, "Organism code", "Hsa"
   input :positions, :array, "Positions Chr:Position (e.g. 19:54646887). Separator can be ':', space or tab. Extra fields are ignored"
   def self.reference_allele_at_genomic_positions(organism, positions)
+    raise ParameterException, "No positions given" if positions.nil?
     chr_positions = {}
 
     log :parsing, "Parsing positions"
     positions.each do |position|
       chr, pos = position.split(/[\s:\t]/)
+      next if chr.nil? or pos.nil?
       chr.sub!(/chr/,'')
       chr_positions[chr] ||= []
       chr_positions[chr] << pos
@@ -84,8 +86,9 @@ module Sequence
 
     log :loading, "Loading results"
     tsv = TSV.setup({}, :key_field => "Genomic Position", :fields => ["Reference Allele"], :type => :single, :namespace => organism, :unnamed => true)
-    positions.collect do |position|
+    positions.each do |position|
       chr, pos = position.split(/[\s:\t]/).values_at 0, 1
+      next if chr.nil? or pos.nil?
       chr.sub!(/chr/,'')
       tsv[position] = chr_bases[chr].shift
     end

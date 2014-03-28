@@ -15,6 +15,7 @@ module Sequence
   input :organism, :string, "Organism code", "Hsa"
   input :positions, :array, "Positions Chr:Position (e.g. 11:533766). Separator can be ':', space or tab. Extra fields are ignored"
   def self.genes_at_genomic_positions(organism, positions)
+    raise ParameterException, "No positions given" if positions.nil?
     chr_positions = {}
     positions.each do |position|
       next if position.empty?

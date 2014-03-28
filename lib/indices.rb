@@ -112,6 +112,33 @@ module Sequence
     CACHE[:transcript_protein][key]
   end
 
+  def self.transcript_gene(organism)
+    key = organism
+    CACHE[:transcript_gene] ||= {}
+    if CACHE[:transcript_gene][key].nil?
+      CACHE[:transcript_gene][key] = Organism.transcripts(organism).tsv(:persist => true, :fields => ["Ensembl Gene ID"], :type => :single, :unnamed => true)
+    end
+    CACHE[:transcript_gene][key]
+  end
+
+  def self.exon_transcripts(organism)
+    key = organism
+    CACHE[:exon_transcripts] ||= {}
+    if CACHE[:exon_transcripts][key].nil?
+      CACHE[:exon_transcripts][key] = Organism.transcript_exons(organism).tsv(:key_field => "Ensembl Exon ID", :fields => ["Ensembl Transcript ID"], :type => :flat, :persist => true, :unnamed => true)
+    end
+    CACHE[:exon_transcripts][key]
+  end
+
+  def self.transcript_exons(organism)
+    key = organism
+    CACHE[:transcript_exons] ||= {}
+    if CACHE[:transcript_exons][key].nil?
+      CACHE[:transcript_exons][key] = Organism.transcript_exons(organism).tsv(:persist => true, :unnamed => true)
+    end
+    CACHE[:transcript_exons][key]
+  end
+
   def self.transcript_info(organism)
 
     key = organism

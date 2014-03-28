@@ -21,7 +21,7 @@ module Sequence
   end
   export_asynchronous :vcf
 
-  input :genomic_mutations, :array, "chr:pos:mutation"
+  input :mutations, :array, "chr:pos:mutation"
   input :organism, :string, "Organism code", "Hsa"
   input :watson, :boolean, "Mutations all reported on the watson (forward) strand as opposed to the gene strand", true
   task :mutated_isoforms => :tsv do |genomic_mutations,organism,watson|
@@ -111,7 +111,7 @@ module Sequence
 
   dep :genes_at_genomic_positions
   input :positions, :array, "Genomic positions", nil
-  task :binomial_significance => :tsv do |positions|
+  task :binomial_significance => :tsv do |positions,relevant|
     begin
       require 'rsruby'
     rescue
@@ -122,7 +122,7 @@ module Sequence
     organism = step(:genes_at_genomic_positions).info[:inputs][:organism]
     num_mutations = step(:genes_at_genomic_positions).info[:input_size]
 
-    tsv = TSV.setup({}, :key_field => "Ensembl Gene ID", :fields => ["Matches", "Bases", "Frequency", "p.value"], :namespace => organism, :type => :list)
+    tsv = TSV.setup({}, :key_field => "Ensembl Gene ID", :fields => ["Matches", "Bases", "Frequency", "p.value"], :namespace => organism, :type => :list, :cast => :to_f)
 
     genes = Set.new
     gene_mutations = {}
@@ -137,10 +137,12 @@ module Sequence
       end
     end
 
-    total_bases = Organism.gene_list_exon_bases(genes.to_a)
+    genes = genes.to_a
+
+    total_bases = Organism.gene_list_exon_bases(genes)
     global_frequency = num_mutations.to_f / total_bases
 
-    gene2exon_size = Misc.process_to_hash(genes.to_a){|genes| genes.collect{|gene| Organism.gene_list_exon_bases([gene]) }}
+    gene2exon_size = Misc.process_to_hash(genes){|genes| genes.collect{|gene| Organism.gene_list_exon_bases([gene]) }}
 
     genes.each do |gene|
       mutations = gene_mutations[gene]
@@ -155,6 +157,7 @@ module Sequence
 
     tsv
   end
+  export_asynchronous :binomial_significance
 end
 
 require 'indices'
@@ -165,3 +168,5 @@ require 'transcripts'
 require 'mutated_isoforms'
 require 'liftover'
 require 'vcf'
+require 'mutations'
+require 'consequence'
