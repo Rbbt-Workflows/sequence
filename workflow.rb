@@ -10,7 +10,7 @@ Log.info "Loading Structure with #{ $cpus.inspect }" unless $cpus.nil?
 module Sequence
   extend Workflow
 
-  input :file, :text, "VCF file", nil
+  input :file, :text, "VCF file", nil, :stream => true
   input :threshold, :integer, "Quality threshold", 200
   task :vcf => :array do |file,threshold|
     mutations = []
