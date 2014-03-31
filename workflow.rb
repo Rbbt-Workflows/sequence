@@ -13,15 +13,16 @@ module Sequence
   input :file, :text, "VCF file", nil, :stream => true
   input :threshold, :integer, "Quality threshold", 200
   task :vcf => :array do |file,threshold|
-    mutations = []
-    TSV.traverse Sequence::VCF.open_stream(StringIO.new(file)), :fields => ["Quality"], :type => :single, :cast => :to_f, :into => mutations do |mutation,quality|
-      mutation if quality > threshold
+    sout, sin = IO.pipe
+    file = StringIO.new(file) if String === file
+    TSV.traverse Sequence::VCF.open_stream(file), :fields => ["Quality"], :type => :single, :cast => :to_f, :into => sin do |mutation,quality|
+      mutation if quality >= threshold
     end
-    mutations.compact
+    sout
   end
   export_asynchronous :vcf
 
-  input :mutations, :array, "chr:pos:mutation"
+  input :mutations, :array, "chr:pos:mutation", nil, :stream => true
   input :organism, :string, "Organism code", "Hsa"
   input :watson, :boolean, "Mutations all reported on the watson (forward) strand as opposed to the gene strand", true
   task :mutated_isoforms => :tsv do |genomic_mutations,organism,watson|
@@ -31,8 +32,11 @@ module Sequence
     exon_transcript_offsets = Sequence.exon_transcript_offsets(organism) 
     transcript_to_protein = Sequence.transcript_protein(organism)
 
-    tsv = {}
-    TSV.traverse genomic_mutations, :cpus => $cpus, :into => tsv do |mutation|
+    tsv = TSV::Dumper.new({:key_field => "Genomic Mutation", :fields => ["Mutated Isoform"], :type => :flat, :namespace => organism}, path)
+    tsv.init
+
+    TSV.traverse genomic_mutations, :type => :array, :cpus => $cpus, :into => tsv do |mutation|
+      next if mutation.nil?
       chr, pos, mut_str = mutation.split(":")
       next if mut_str.nil?
       chr.sub!(/^chr/i,'')
@@ -103,8 +107,6 @@ module Sequence
 
       [mutation, mis]
     end
-
-    TSV.setup(tsv, :key_field => "Genomic Mutation", :fields => ["Mutated Isoform"], :type => :flat, :namespace => organism)
   end
   export_asynchronous :mutated_isoforms
 

@@ -25,7 +25,7 @@ sizes.each do |size|
 
   if options[:method].nil? or options[:method] == "Sequence"
    Log.info "Sequence" + " " +  size.to_s
-   cmd = "head -n #{size} #{file} | drbbt task Sequence mutated_isoforms --genomic_mutations - -w -as '\\n' -cl -pn --log #{log}"
+   cmd = "head -n #{size} #{file} | drbbt task Sequence mutated_isoforms --mutations - -w -as '\\n' -cl -pn --log #{log}"
    Log.info cmd
    start = Time.now
    CMD.cmd(cmd).read

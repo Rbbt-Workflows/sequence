@@ -83,7 +83,7 @@ module Sequence
             line = vcf.gets
             next
           end
-
+          
           line_values = []
 
           chr, position, id, ref, alt, qual, filter, *rest = parts = line.split(/\s+/)
