@@ -1,7 +1,15 @@
 sequence=/$PWD filter="*.rb *.R *.js *.sass *.haml *.tsv" {
  workflow.rb
+ workflow.rb.old
  workflow.md
  lib=lib {
+  sequence=sequence{
+   indices.rb
+   reference.rb
+   features.rb
+   coding.rb
+   annotations.rb
+  }
   indices.rb
 
   alleles.rb
