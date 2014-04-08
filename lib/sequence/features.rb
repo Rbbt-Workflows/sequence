@@ -31,7 +31,7 @@ module Sequence
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Ensembl Exon ID"], :type => :flat, :namespace => organism
     dumper.init
     chromosome_files = {}
-    TSV.traverse positions, :cpus => 2, :type => :array, :into => dumper do |position|
+    TSV.traverse positions, :_cpus => 2, :type => :array, :into => dumper do |position|
       chr, pos = position.split(/[\s:\t]+/)
       next if pos.nil?
       chr.sub!(/^chr/i,'')

@@ -7,6 +7,7 @@ module Sequence
   task :reference => :tsv do |positions,organism,vcf|
     positions = step(:genomic_mutations) if step(:genomic_mutations)
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Reference Allele"], :type => :single, :namespace => organism
+    dumper.init
     chromosome_files = {}
     TSV.traverse positions, :type => :array, :into => dumper do |position|
       begin
@@ -24,6 +25,7 @@ module Sequence
         ref = file.getc
         [position, ref]
       rescue
+        Log.exception $!
       end
     end
   end

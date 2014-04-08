@@ -75,7 +75,7 @@ module Sequence
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Transcript position"], :type => :flat, :namespace => organism
     dumper.init
     
-    TSV.traverse step(:exons), :cpus => 2, :into => dumper, :type => :flat do |position,exons|
+    TSV.traverse step(:exons), :_cpus => 2, :into => dumper, :type => :flat do |position,exons|
       next if position.nil?
       pos = position.split(":")[1]
       next if pos.nil?
@@ -117,7 +117,7 @@ module Sequence
 
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Mutated Isoform"], :type => :flat, :namespace => organism
     dumper.init
-    TSV.traverse step(:transcript_offsets), :cpus => 2, :into => dumper, :type => :flat do |mutation,transcript_offsets|
+    TSV.traverse step(:transcript_offsets), :_cpus => 2, :into => dumper, :type => :flat do |mutation,transcript_offsets|
       next if mutation.nil?
       chr, pos, mut_str = mutation.split(":")
       next if mut_str.nil?
