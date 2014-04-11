@@ -130,7 +130,8 @@ module Sequence
 
         transcript_offsets.collect{|to| to.split ":" }.each do |transcript, transcript_offset, strand|
           protein = transcript_protein[transcript]
-          next if protein.nil?
+          #eee [:missing_protein, transcript, protein] if protein.nil? or protein.strip.empty?
+          next if protein.nil? or protein.empty?
 
           begin
             codon = Sequence.codon_at_transcript_position(organism, transcript, transcript_offset.to_i);

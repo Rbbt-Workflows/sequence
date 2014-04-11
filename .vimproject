@@ -4,6 +4,7 @@ sequence=/$PWD filter="*.rb *.R *.js *.sass *.haml *.tsv" {
  workflow.md
  lib=lib {
   sequence=sequence{
+   vcf.rb
    indices.rb
    reference.rb
    features.rb

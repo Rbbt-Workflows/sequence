@@ -139,7 +139,7 @@ module Sequence
 
     stream = TSV.traverse expanded_vcf, :key_field => "Genomic Mutation", :fields => ["Quality"], :cast => :to_f, :type => :single, :into => :stream do |mutation,qual|
       next if qual > 0 and qual > quality
-      mutation
+      mutation.strip
     end
   end
 end
