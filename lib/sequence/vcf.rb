@@ -111,13 +111,12 @@ module Sequence
 
             line = vcf.gets
           end
+          vcf.join if vcf.respond_to? :join
+          sin.close if sin.respond_to? :close
         rescue Exception
           Log.exception $!
           sin.abort if sin.respond_to? :abort
           raise $!
-        ensure
-          vcf.join if vcf.respond_to? :join
-          sin.close if sin.respond_to? :close
         end
       end
     end

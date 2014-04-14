@@ -75,7 +75,7 @@ module Sequence
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Transcript position"], :type => :flat, :namespace => organism
     dumper.init
     
-    TSV.traverse step(:exons), :_cpus => 2, :into => dumper, :type => :flat do |position,exons|
+    TSV.traverse step(:exons), :cpus => 2, :into => dumper, :type => :flat do |position,exons|
       next if position.nil?
       pos = position.split(":")[1]
       next if pos.nil?
@@ -117,7 +117,7 @@ module Sequence
 
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Mutated Isoform"], :type => :flat, :namespace => organism
     dumper.init
-    TSV.traverse step(:transcript_offsets), :_cpus => 2, :into => dumper, :type => :flat do |mutation,transcript_offsets|
+    TSV.traverse step(:transcript_offsets), :cpus => 2, :into => dumper, :type => :flat do |mutation,transcript_offsets|
       next if mutation.nil?
       chr, pos, mut_str = mutation.split(":")
       next if mut_str.nil?
@@ -173,4 +173,48 @@ module Sequence
     end
   end
   export_synchronous :mutated_isoforms
+
+  dep do |jobname, options|
+    options[:positions] = options[:mutations]
+    if options[:watson]
+      Sequence.job(:reference, jobname, options)
+    else
+      Sequence.job(:gene_strand_reference, jobname, options)
+    end
+  end
+  input *MUTATIONS_INPUT
+  input *ORGANISM_INPUT
+  input *WATSON_INPUT
+  task :type => :tsv do |_muts, _org, watson|
+    reference_job = watson ? step(:reference) : step(:gene_strand_reference)
+
+    mutation_type = TSV::Dumper.new(:key_field => "Genomic Mutation", :fields => ["Mutation type"], :type => :single)
+    TSV.traverse reference_job, :into => mutation_type do |mutation, reference|
+      base = mutation.split(":")[2]
+
+      type = case
+             when (base.nil? or reference.nil? or base == "?" or reference == "?")
+               "unknown"
+             when base.index(',')
+               "multiple"
+             when base == reference
+               "none"
+             when (base.length > 1 or base == '-')
+               "indel"
+             when (not %w(A G T C).include? base and not %w(A G T C).include? reference) 
+               "unknown"
+             when (((Misc::IUPAC2BASE[base] || []) & ["A", "G"]).any? and     ((Misc::IUPAC2BASE[reference] || []) & ["T", "C"]).any?)
+               "transversion"
+             when (((Misc::IUPAC2BASE[base] || []) & ["T", "C"]).any? and     ((Misc::IUPAC2BASE[reference] || []) & ["A", "G"]).any?)
+               "transversion"
+             when (((Misc::IUPAC2BASE[base] || []) & ["A", "G"]).any? and     ((Misc::IUPAC2BASE[reference] || [nil]) & ["T", "C", nil]).empty?)
+               "transition"
+             when (((Misc::IUPAC2BASE[base] || []) & ["T", "C"]).any? and     ((Misc::IUPAC2BASE[reference] || [nil]) & ["A", "G", nil]).empty?)
+               "transition"
+             else
+               "unknown"
+             end
+      [mutation, type]
+    end
+  end
 end
