@@ -123,7 +123,7 @@ module Sequence
   input *ORGANISM_INPUT
   task :genes_at_ranges => :tsv do |ranges,organism|
     chromosome_files = {}
-    dumper = TSV::Dumper.new :key_field => "Genomic Range", :fields => ["Ensembl Gene ID"], :type => :flat, :namespace => organism
+    dumper = TSV::Dumper.new :key_field => "Chromosome Range", :fields => ["Ensembl Gene ID"], :type => :flat, :namespace => organism
     dumper.init
     TSV.traverse ranges, :type => :array, :into => dumper do |range|
       chr, start, eend = range.split(/[\s:\t]+/)

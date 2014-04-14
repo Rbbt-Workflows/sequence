@@ -57,6 +57,6 @@ module Sequence
       end
     end
   end
-  export_synchronous :reference
+  export_synchronous :gene_strand_reference
 
 end

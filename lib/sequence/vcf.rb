@@ -54,7 +54,7 @@ module Sequence
       res
     end
 
-    def self.open_stream(vcf)
+    def self.open_stream(vcf, no_info = false, no_format = false)
       vcf = TSV.get_stream vcf
       header, line = header vcf
 
@@ -68,8 +68,8 @@ module Sequence
       info_fields = header["INFO"].keys if header.include? "INFO"
       format_fields = header["FORMAT"].keys if header.include? "FORMAT"
 
-      info_pos = fields.index("INFO")
-      format_pos = fields.index("FORMAT")
+      info_pos = fields.index("INFO") unless no_info
+      format_pos = fields.index("FORMAT") unless no_format
       sample_fields = format_pos ? fields[format_pos+1..-1] : []
 
       stream_fields = ["RS ID", "Quality"]
@@ -127,11 +127,16 @@ module Sequence
   end
 
   input :vcf_file, :text, "VCF file", nil, :stream => true
-  task :expanded_vcf => :tsv do |vcf|
-    Sequence::VCF.open_stream(vcf)
+  input :info, :boolean, "Expand the INFO field", true
+  input :format, :boolean, "Expand the sample FORMAT fields", true
+  task :expanded_vcf => :tsv do |vcf,info,format|
+    Sequence::VCF.open_stream(vcf, !info, !format)
   end
 
-  dep :expanded_vcf
+  dep do |name, options|
+    Sequence.job(:expanded_vcf, name, options.merge({:info => false, :format => false}))
+  end
+  input :vcf_file, :text, "VCF file", nil, :stream => true
   input :quality, :float, "Quality threshold", 200
   task :genomic_mutations => :array do |quality|
     expanded_vcf = step(:expanded_vcf)
