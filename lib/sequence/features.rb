@@ -118,4 +118,21 @@ module Sequence
     end
   end
   export_synchronous :exon_junctions
+
+  input *RANGES_INPUT
+  input *ORGANISM_INPUT
+  task :genes_at_ranges => :tsv do |ranges,organism|
+    chromosome_files = {}
+    dumper = TSV::Dumper.new :key_field => "Genomic Range", :fields => ["Ensembl Gene ID"], :type => :flat, :namespace => organism
+    dumper.init
+    TSV.traverse ranges, :type => :array, :into => dumper do |range|
+      chr, start, eend = range.split(/[\s:\t]+/)
+      next if eend.nil?
+      chr.sub!(/^chr/i,'')
+      index = chromosome_files[chr] ||= Sequence.gene_chromosome_index(organism, chr)
+      genes = index[(start.to_i..eend.to_i)]
+      [range, genes]
+    end
+  end
+  export_synchronous :genes_at_ranges
 end
