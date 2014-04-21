@@ -79,25 +79,25 @@ module Sequence
       pos = position.split(":")[1]
       next if pos.nil?
       pos = pos.to_i
-      if exons.nil?  or exons.empty?
-        [position, []]
-      else
-        transcript_positions = exons.inject([]) do |offsets,exon|
-          next offsets unless exon_position.include? exon
-          strand, start, eend = exon_position[exon]
-          if strand == 1
-            offset = pos - start
-          else
-            offset = eend - pos
-          end
-          Misc.zip_fields(exon_transcript_offsets[exon]).each do |transcript, exon_offset|
-            offsets << [transcript, exon_offset.to_i + offset, strand] * ":"
-          end if exon_transcript_offsets.include? exon
-          offsets
-        end.compact
+      next if exons.nil?  or exons.empty?
 
-        [position, transcript_positions]
-      end
+      transcript_positions = exons.inject([]) do |offsets,exon|
+        next offsets unless exon_position.include? exon
+        strand, start, eend = exon_position[exon]
+        if strand == 1
+          offset = pos - start
+        else
+          offset = eend - pos
+        end
+        Misc.zip_fields(exon_transcript_offsets[exon]).each do |transcript, exon_offset|
+          offsets << [transcript, exon_offset.to_i + offset, strand] * ":"
+        end if exon_transcript_offsets.include? exon
+        offsets
+      end.compact
+
+      next if transcript_positions.empty?
+
+      [position, transcript_positions]
     end
   end
   export_synchronous :transcript_offsets
@@ -130,7 +130,6 @@ module Sequence
 
         transcript_offsets.collect{|to| to.split ":" }.each do |transcript, transcript_offset, strand|
           protein = transcript_protein[transcript]
-          #eee [:missing_protein, transcript, protein] if protein.nil? or protein.strip.empty?
           next if protein.nil? or protein.empty?
 
           begin
@@ -188,6 +187,7 @@ module Sequence
   task :type => :tsv do |_muts, _org, watson|
     reference_job = watson ? step(:reference) : step(:gene_strand_reference)
 
+    organism = reference_job.info[:inputs][:organism]
     mutation_type = TSV::Dumper.new(:key_field => "Genomic Mutation", :fields => ["Mutation type"], :type => :single, :namespace => organism)
     TSV.traverse reference_job, :into => mutation_type do |mutation, reference|
       base = mutation.split(":")[2]
