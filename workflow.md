@@ -1,5 +1,10 @@
 Functionalities regarding genomic sequence analysis.
 
+Finds genomic features overlapping genomic positions, like exons, reconstructs
+offsets into transcripts, and computes the amino-acid changaes of variants.
+Additionally finds mutations in exon junctions, and genes with high frequencies
+of mutations.
+
 Positions, ranges, and mutations are specified using a common format. Each is
 identified by several fields separated by the character `:`. *Positions* are
 represented as `chromosome:position` i.e. `12:4234412`. *Mutations* have an

@@ -16,7 +16,7 @@ module Sequence
   VCF_INPUT = [:vcf, :boolean, "Is the input an VCF file instead of genomic mutations", false]
   VCF_CONVERTER = Proc.new do |jobname,options|
     if options[:vcf]
-      Sequence.job(:genomic_mutations, jobname, options.merge(:vcf_file => options[:mutations] || options[:positions])).run false
+      Sequence.job(:genomic_mutations, jobname, options.merge(:vcf_file => options[:mutations] || options[:positions]))#.run false
     end
   end
 end

@@ -63,11 +63,10 @@ module Sequence
     [sequence[(codon * 3)..((codon + 1) * 3 - 1)], codon_offset, codon] * ":"
   end
 
-  input *POSITIONS_INPUT
-  input *ORGANISM_INPUT
   dep :exons
-  task :transcript_offsets => :tsv do |positions,organism|
+  task :transcript_offsets => :tsv do
     mutations = step(:genomic_mutations) if step(:genomic_mutations)
+    organism = step(:exons).inputs[1]
 
     exon_position = Sequence.exon_position(organism)
     exon_transcript_offsets = Sequence.exon_transcript_offsets(organism)
@@ -75,7 +74,7 @@ module Sequence
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Transcript position"], :type => :flat, :namespace => organism
     dumper.init
     
-    TSV.traverse step(:exons), :cpus => 2, :into => dumper, :type => :flat do |position,exons|
+    TSV.traverse step(:exons), :into => dumper, :type => :flat do |position,exons|
       next if position.nil?
       pos = position.split(":")[1]
       next if pos.nil?
@@ -106,12 +105,13 @@ module Sequence
   input *MUTATIONS_INPUT
   input *ORGANISM_INPUT
   input *WATSON_INPUT
-  input *VCF_INPUT 
+  input *VCF_INPUT
   dep do |jobname, options|
     options[:positions] = options[:mutations]
     Sequence.job(:transcript_offsets, jobname, options)
   end
   task :mutated_isoforms => :tsv do |mutations,organism,watson|
+    Misc.consume_stream mutations, true
 
     transcript_protein = Sequence.transcript_protein(organism)
 
@@ -188,7 +188,7 @@ module Sequence
   task :type => :tsv do |_muts, _org, watson|
     reference_job = watson ? step(:reference) : step(:gene_strand_reference)
 
-    mutation_type = TSV::Dumper.new(:key_field => "Genomic Mutation", :fields => ["Mutation type"], :type => :single)
+    mutation_type = TSV::Dumper.new(:key_field => "Genomic Mutation", :fields => ["Mutation type"], :type => :single, :namespace => organism)
     TSV.traverse reference_job, :into => mutation_type do |mutation, reference|
       base = mutation.split(":")[2]
 
