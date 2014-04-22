@@ -11,6 +11,7 @@ sequence=/$PWD filter="*.rb *.R *.js *.sass *.haml *.tsv" {
    reference.rb
    features.rb
    coding.rb
+   fast.rb
    annotations.rb
    significance.rb
   }

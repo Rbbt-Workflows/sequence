@@ -14,9 +14,10 @@ log = Log.severity
 sizes.each do |size|
   size = size.to_i
 
+  jobname = [file, size] * " -- "
   if options[:method].nil? or options[:method] == "annovar"
    Log.info "annovar" + " " +  size.to_s
-   cmd = "head -n #{size} #{file} | drbbt task Annovar analysis -g - -as '\\n' -cl -pn --log #{log}"
+   cmd = "head -n #{size} #{file} | drbbt task Annovar analysis -g - -as '\\n' -cl -pf --log #{log} -jn='#{jobname}'"
    Log.info cmd
    start = Time.now
    CMD.cmd(cmd).read
@@ -25,7 +26,7 @@ sizes.each do |size|
 
   if options[:method].nil? or options[:method] == "Sequence"
    Log.info "Sequence" + " " +  size.to_s
-   cmd = "head -n #{size} #{file} | drbbt task Sequence mutated_isoforms --mutations - -w -as '\\n' -cl -pn --log #{log}"
+   cmd = "head -n #{size} #{file} | drbbt task Sequence mutated_isoforms_fast --mutations - -w -as '\\n' -rcl -pf --log #{log} -jn='#{jobname}'"
    Log.info cmd
    start = Time.now
    CMD.cmd(cmd).read

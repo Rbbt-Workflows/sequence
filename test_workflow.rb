@@ -7,6 +7,18 @@ require 'rbbt/workflow'
 Workflow.require_workflow "Sequence"
 
 class TestSequence < Test::Unit::TestCase
+
+  def test_mutated_isoforms_10_000_fast
+    step_fast = Sequence.example_step('mutated_isoforms_fast', '10_000')
+    step = Sequence.example_step('mutated_isoforms', '10_000')
+
+    res = step.run
+    res_fast = step_fast.run
+
+    assert_equal res.keys.sort, res_fast.keys.sort
+    assert_equal res.values.flatten.sort, res_fast.values.flatten.sort
+  end
+
   def test_mutated_isoforms_10_000
     step = Sequence.example_step('mutated_isoforms', '10_000')
     mis = step.recursive_clean.run

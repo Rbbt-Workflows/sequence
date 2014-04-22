@@ -43,8 +43,8 @@ module Sequence
       next if pos.nil?
       chr.sub!(/^chr/i,'')
       index = chromosome_files[chr] ||= Sequence.exon_chromosome_index(organism, chr)
-      genes = index[pos.to_i]
-      [position, genes]
+      exons = index[pos.to_i]
+      [position, exons]
     end
   end
   export_synchronous :exons
@@ -67,8 +67,8 @@ module Sequence
       next if pos.nil?
       chr.sub!(/^chr/i,'')
       index = chromosome_files[chr] ||= Sequence.transcript_chromosome_index(organism, chr)
-      genes = index[pos.to_i]
-      [position, genes]
+      transcripts = index[pos.to_i]
+      [position, transcripts]
     end
   end
   export_synchronous :transcripts
