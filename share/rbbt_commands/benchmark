@@ -11,26 +11,71 @@ options = SOPT.get('-m--method*')
 file, *sizes = ARGV
 
 log = Log.severity
+times = {
+  "ANNOVAR" => [],
+  "Sequence_nostream" => [], 
+  "Sequence" => [], 
+  "Sequence_fast" => [], 
+}
+
 sizes.each do |size|
   size = size.to_i
 
-  jobname = [file, size] * " -- "
-  if options[:method].nil? or options[:method] == "annovar"
-   Log.info "annovar" + " " +  size.to_s
-   cmd = "head -n #{size} #{file} | drbbt task Annovar analysis -g - -as '\\n' -cl -pf --log #{log} -jn='#{jobname}'"
-   Log.info cmd
-   start = Time.now
-   CMD.cmd(cmd).read
-   Log.info Log.color(:red, "annovar") + " " + Log.color(:blue, size.to_s) + " " + Log.color(:yellow, (Time.now - start).to_s)
-  end
+  text = ""
+  text = Open.read(file).split("\n").reject{|l| l =~ /^M:/}[1..size] * "\n"
 
-  if options[:method].nil? or options[:method] == "Sequence"
-   Log.info "Sequence" + " " +  size.to_s
-   cmd = "head -n #{size} #{file} | drbbt task Sequence mutated_isoforms_fast --mutations - -w -as '\\n' -rcl -pf --log #{log} -jn='#{jobname}'"
-   Log.info cmd
-   start = Time.now
-   CMD.cmd(cmd).read
-   Log.info Log.color(:red, "Sequence") + " " + Log.color(:blue, size.to_s) + " " + Log.color(:yellow, (Time.now - start).to_s)
+  TmpFile.with_file(text) do |tmpfile|
+    Path.setup(tmpfile)
+
+    jobname = [File.basename(file), size] * "."
+    if options[:method].nil? or options[:method] == "annovar"
+      Log.info "annovar" + " " +  size.to_s
+      job = Annovar.job(:analysis, jobname, :genomic_mutations => Open.read(tmpfile).split("\n"))
+      job.fork
+      job.join
+      time = job.info[:process_time]
+      times["ANNOVAR"] << time
+      Log.info Log.color(:red, "annovar") + " " + Log.color(:blue, size.to_s) + " " + Log.color(:yellow, time.to_i)
+    end
+
+    if options[:method].nil? or options[:method] == "Sequence"
+      Open.open(tmpfile) do |f|
+        Log.info "Sequence" + " " +  size.to_s
+        job = Sequence.job(:mutated_isoforms, jobname, :mutations => f).recursive_clean
+        job.fork
+        job.join
+        time = job.info[:time_elapsed]
+        times["Sequence"] << time
+        Log.info Log.color(:red, "Sequence") + " " + Log.color(:blue, size.to_s) + " " + Log.color(:yellow, time.to_i)
+      end
+    end
+
+    if options[:method].nil? or options[:method] == "Sequence_nostream"
+      Log.info "Sequence_nostream" + " " +  size.to_s
+      ENV["RBBT_NO_STREAM"] = "true"
+      job = Sequence.job(:mutated_isoforms, jobname, :mutations => tmpfile).recursive_clean
+      job.fork
+      job.join
+      ENV["RBBT_NO_STREAM"] = nil
+      time = job.info[:time_elapsed]
+      times["Sequence_nostream"] << time
+      Log.info Log.color(:red, "Sequence_nostream") + " " + Log.color(:blue, size.to_s) + " " + Log.color(:yellow, time.to_i)
+    end
+
+    if options[:method].nil? or options[:method] == "Sequence_fast"
+      Open.open(tmpfile) do |f|
+        Log.info "Sequence_fast" + " " +  size.to_s
+        job = Sequence.job(:mutated_isoforms_fast, jobname, :mutations => f).recursive_clean
+        job.fork
+        job.join
+        time = job.info[:time_elapsed]
+        times["Sequence_fast"] << time
+        Log.info Log.color(:red, "Sequence_fast") + " " + Log.color(:blue, size.to_s) + " " + Log.color(:yellow, time.to_i)
+      end
+    end
   end
 end
 
+TSV.setup(times, :key_field => "Method", :fields => sizes, :type => :list, :cast => :to_i)
+
+puts times.to_s

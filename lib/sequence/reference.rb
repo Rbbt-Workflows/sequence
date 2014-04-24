@@ -27,6 +27,7 @@ module Sequence
         [position, ref]
       rescue
         Log.exception $!
+        [position, "?"]
       end
     end
   end

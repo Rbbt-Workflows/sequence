@@ -1,7 +1,6 @@
 sequence=/$PWD filter="*.rb *.R *.js *.sass *.haml *.tsv" {
  workflow.rb
  test_workflow.rb
- workflow.rb.old
  workflow.md
  lib=lib {
   sequence=sequence{
@@ -36,6 +35,7 @@ sequence=/$PWD filter="*.rb *.R *.js *.sass *.haml *.tsv" {
   rbbt_commands=rbbt_commands filter="*"{
    bootstrap
    benchmark
+   benchmark2
   }
  }
 }

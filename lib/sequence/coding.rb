@@ -20,10 +20,10 @@ module Sequence
   end
 
   def self.codon_at_transcript_position(organism, transcript, offset)
-    transcript_sequence = Sequence.transcript_sequence(organism)
-    transcript_5utr = Sequence.transcript_5utr(organism) 
-    transcript_3utr = Sequence.transcript_3utr(organism) 
-    transcript_phase = Sequence.transcript_phase(organism)
+    transcript_sequence = @@transcript_sequence ||= Sequence.transcript_sequence(organism)
+    transcript_5utr = @@transcript_5utr ||= Sequence.transcript_5utr(organism) 
+    transcript_3utr = @@transcript_3utr ||= Sequence.transcript_3utr(organism) 
+    transcript_phase = @@transcript_phase ||= Sequence.transcript_phase(organism)
 
     utr5 = transcript_5utr[transcript]
       
@@ -115,7 +115,7 @@ module Sequence
 
     transcript_protein = Sequence.transcript_protein(organism)
 
-    dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Mutated Isoform"], :type => :flat, :namespace => organism
+    dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Mutated Isoform"], :type => :flat, :namespace => organism
     dumper.init
     TSV.traverse step(:transcript_offsets), :cpus => 2, :into => dumper, :type => :flat do |mutation,transcript_offsets|
       next if mutation.nil?

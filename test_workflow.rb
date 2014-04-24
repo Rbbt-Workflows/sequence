@@ -37,7 +37,7 @@ class TestSequence < Test::Unit::TestCase
   end
 
   def test_mutated_isoforms_10_000_stream
-    step = Sequence.example_step('mutated_isoforms', '10_000')
+    step = Sequence.example_step('mutated_isoforms', 'VCF.10_000')
     step = step.recursive_clean.run true
     mis = TSV.open step 
     toffs = step.step(:transcript_offsets).load
@@ -50,7 +50,7 @@ class TestSequence < Test::Unit::TestCase
         t,o,*rest = to.split ":"
         index[t]
       end
-      assert proteins.reject{|p| p.empty?}.empty? || m.split(":")[2] == "?"
+      assert m.split(":")[2].nil? || m.split(":")[2] == "?" ||  proteins.reject{|p| p.empty?}.empty?
     end
   end
 end

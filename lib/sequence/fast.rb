@@ -17,9 +17,9 @@ module Sequence
 
     chromosome_files = {}
 
-    dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Mutated Isoform"], :type => :flat, :namespace => organism
+    dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Mutated Isoform"], :type => :flat, :namespace => organism
     dumper.init
-    TSV.traverse mutations, :_cpus => 5, :into => dumper, :type => :flat do |mutation|
+    TSV.traverse mutations, :cpus => 3, :into => dumper, :type => :array do |mutation|
       next if mutation.nil?
       chr, pos, mut_str = mutation.split(":")
       next if mut_str.nil?
@@ -28,6 +28,8 @@ module Sequence
 
       index = chromosome_files[chr] ||= Sequence.exon_chromosome_index(organism, chr)
       exons = index[pos]
+
+      next if exons.empty?
 
       transcript_offsets = exons.inject([]) do |offsets,exon|
         next offsets unless exon_position.include? exon
@@ -92,6 +94,6 @@ module Sequence
       [mutation, mis]
     end
   end
-  export_synchronous :mutated_isoforms
+  export_synchronous :mutated_isoforms_fast
 
 end
