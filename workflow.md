@@ -70,7 +70,7 @@ Report genes overlapping ranges
 ## type
 
 Report the type of base change: transition, transversion, indel, unknown or
-nont at all
+none at all
 
 ## transcript_offsets
 
