@@ -1,4 +1,8 @@
 module Sequence
+  input *MUTATIONS_INPUT
+  input *ORGANISM_INPUT
+  input *WATSON_INPUT
+  input *VCF_INPUT
 
   def self.alleles(mut)
     case
@@ -63,6 +67,59 @@ module Sequence
     [sequence[(codon * 3)..((codon + 1) * 3 - 1)], codon_offset, codon] * ":"
   end
 
+  dep do |jobname, options|
+    options = options.dup
+    IndiferentHash.setup options
+    options[:positions] = options.delete :mutations 
+    if FalseClass === options[:watson]
+      Sequence.job(:gene_strand_reference, jobname, options)
+    else
+      Sequence.job(:reference, jobname, options)
+    end
+  end
+  input *MUTATIONS_INPUT
+  input *ORGANISM_INPUT
+  input *WATSON_INPUT
+  input *VCF_INPUT
+  task :type => :tsv do |_muts, _org, watson|
+    Misc.consume_stream _muts, true
+    reference_job = watson ? step(:reference) : step(:gene_strand_reference)
+
+    reference_job.grace
+    organism = reference_job.info[:inputs][:organism]
+    mutation_type = TSV::Dumper.new(:key_field => "Genomic Mutation", :fields => ["Mutation type"], :type => :single, :namespace => organism)
+    mutation_type.init
+    TSV.traverse reference_job, :bar => "Type", :into => mutation_type do |mutation, reference|
+      mutation = mutation.first if Array === mutation
+      base = mutation.split(":")[2]
+
+      type = case
+             when (base.nil? or reference.nil? or base == "?" or reference == "?")
+               "unknown"
+             when base.index(',')
+               "multiple"
+             when base == reference
+               "none"
+             when (base.length > 1 or base == '-')
+               "indel"
+             when (not %w(A G T C).include? base and not %w(A G T C).include? reference) 
+               "unknown"
+             when (((Misc::IUPAC2BASE[base] || []) & ["A", "G"]).any? and     ((Misc::IUPAC2BASE[reference] || []) & ["T", "C"]).any?)
+               "transversion"
+             when (((Misc::IUPAC2BASE[base] || []) & ["T", "C"]).any? and     ((Misc::IUPAC2BASE[reference] || []) & ["A", "G"]).any?)
+               "transversion"
+             when (((Misc::IUPAC2BASE[base] || []) & ["A", "G"]).any? and     ((Misc::IUPAC2BASE[reference] || [nil]) & ["T", "C", nil]).empty?)
+               "transition"
+             when (((Misc::IUPAC2BASE[base] || []) & ["T", "C"]).any? and     ((Misc::IUPAC2BASE[reference] || [nil]) & ["A", "G", nil]).empty?)
+               "transition"
+             else
+               "unknown"
+             end
+      [mutation, type]
+    end
+  end
+  export_asynchronous :type
+
   dep :exons
   task :transcript_offsets => :tsv do
     mutations = step(:genomic_mutations) if step(:genomic_mutations)
@@ -74,7 +131,7 @@ module Sequence
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Transcript position"], :type => :flat, :namespace => organism
     dumper.init
     
-    TSV.traverse step(:exons), :into => dumper, :type => :flat do |position,exons|
+    TSV.traverse step(:exons), :bar => "Transcript offsets", :into => dumper, :type => :flat do |position,exons|
       next if position.nil?
       pos = position.split(":")[1]
       next if pos.nil?
@@ -117,7 +174,7 @@ module Sequence
 
     dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Mutated Isoform"], :type => :flat, :namespace => organism
     dumper.init
-    TSV.traverse step(:transcript_offsets), :cpus => 2, :into => dumper, :type => :flat do |mutation,transcript_offsets|
+    TSV.traverse step(:transcript_offsets), :bar => "Mutated Isoforms", :_cpus => 2, :into => dumper, :type => :flat do |mutation,transcript_offsets|
       next if mutation.nil?
       chr, pos, mut_str = mutation.split(":")
       next if mut_str.nil?
@@ -173,48 +230,64 @@ module Sequence
   end
   export_synchronous :mutated_isoforms
 
-  dep do |jobname, options|
-    options[:positions] = options[:mutations]
-    if options[:watson]
-      Sequence.job(:reference, jobname, options)
-    else
-      Sequence.job(:gene_strand_reference, jobname, options)
-    end
+
+  dep do |jobname,options|
+    options = options.dup
+    IndiferentHash.setup options
+    options.merge!(:positions => options[:mutations])
+    Sequence.job(:exon_junctions, jobname, options)
   end
+  dep :type
   input *MUTATIONS_INPUT
   input *ORGANISM_INPUT
   input *WATSON_INPUT
-  task :type => :tsv do |_muts, _org, watson|
-    reference_job = watson ? step(:reference) : step(:gene_strand_reference)
+  input *VCF_INPUT
+  task :splicing_mutations => :tsv do |_pos|
+    Misc.consume_stream _pos, true
+    type = step(:type)
+    exon_junctions = step(:exon_junctions)
 
-    organism = reference_job.info[:inputs][:organism]
-    mutation_type = TSV::Dumper.new(:key_field => "Genomic Mutation", :fields => ["Mutation type"], :type => :single, :namespace => organism)
-    TSV.traverse reference_job, :into => mutation_type do |mutation, reference|
-      base = mutation.split(":")[2]
+    type.grace
+    exon_junctions.grace
 
-      type = case
-             when (base.nil? or reference.nil? or base == "?" or reference == "?")
-               "unknown"
-             when base.index(',')
-               "multiple"
-             when base == reference
-               "none"
-             when (base.length > 1 or base == '-')
-               "indel"
-             when (not %w(A G T C).include? base and not %w(A G T C).include? reference) 
-               "unknown"
-             when (((Misc::IUPAC2BASE[base] || []) & ["A", "G"]).any? and     ((Misc::IUPAC2BASE[reference] || []) & ["T", "C"]).any?)
-               "transversion"
-             when (((Misc::IUPAC2BASE[base] || []) & ["T", "C"]).any? and     ((Misc::IUPAC2BASE[reference] || []) & ["A", "G"]).any?)
-               "transversion"
-             when (((Misc::IUPAC2BASE[base] || []) & ["A", "G"]).any? and     ((Misc::IUPAC2BASE[reference] || [nil]) & ["T", "C", nil]).empty?)
-               "transition"
-             when (((Misc::IUPAC2BASE[base] || []) & ["T", "C"]).any? and     ((Misc::IUPAC2BASE[reference] || [nil]) & ["A", "G", nil]).empty?)
-               "transition"
-             else
-               "unknown"
-             end
-      [mutation, type]
+    organism = exon_junctions.info[:inputs][:organism]
+    transcript_exons = Sequence.transcript_exons(organism)
+    exon_transcripts = Sequence.exon_transcripts(organism)
+    dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Affected Transcripts"], :namespace => organism, :type => :flat
+    dumper.init
+    TSV.traverse TSV.paste_streams([type, exon_junctions], :sort => false), :bar => "Splicing Mutations", :type => :array, :into => dumper do |line|
+      mutation, type, *exon_junctions = line.split "\t"
+      next if type == "none" or type == "unknown"
+      next if exon_junctions.empty?
+      affected_transcripts = []
+      exon_junctions.each do |junction|
+        exon, _sep, junction_type = junction.partition ":"
+        transcripts = exon_transcripts[exon]
+        next if transcripts.nil?
+
+        transcripts.select! do |transcript|
+          transcript_info = transcript_exons[transcript]
+          next if transcript_info.nil?
+
+          total_exons = transcript_info[0].length
+          next if transcript_info[0].index(exon).nil?
+          rank = transcript_info[1][transcript_info[0].index(exon)].to_i
+
+          case
+          when (rank == 1 and junction_type =~ /acceptor/)
+            false
+          when (rank == total_exons and junction_type =~ /donor/)
+            false
+          else
+            true
+          end
+        end
+        affected_transcripts.concat transcripts
+
+      end
+      next if  affected_transcripts.empty?
+      [mutation, affected_transcripts]
     end
   end
+  export_asynchronous :splicing_mutations
 end

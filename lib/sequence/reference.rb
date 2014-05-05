@@ -5,19 +5,23 @@ module Sequence
   input *VCF_INPUT
   dep &VCF_CONVERTER
   task :reference => :tsv do |positions,organism,vcf|
-    positions = step(:genomic_mutations) if step(:genomic_mutations)
+    if step(:genomic_mutations)
+      Misc.consume_stream positions, true
+      positions = step(:genomic_mutations) 
+    end
 
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Reference Allele"], :type => :single, :namespace => organism
     dumper.init
     chromosome_files = {}
-    TSV.traverse positions, :type => :array, :into => dumper do |position|
+    TSV.traverse positions, :bar => "Reference", :type => :array, :into => dumper do |position|
       begin
         chr, pos = position.split(/[\s:\t]+/)
         next if pos.nil?
         chr.sub!(/^chr/i,'')
+        chr = "MT" if chr == "M"
         file = chromosome_files[chr] ||= begin
                                            Sequence.chromosome_file(organism, chr)
-                                         rescue
+                                         rescue Exception
                                            :missing
                                          end
         next if file == :missing
@@ -36,13 +40,15 @@ module Sequence
   dep :reference
   dep :exons
   task :gene_strand_reference => :tsv do 
-    pasted = TSV.paste_streams [step(:reference), step(:exons)], :sort => true
+    step(:reference).grace
+    step(:exons).grace
+    pasted = TSV.paste_streams [step(:reference).grace, step(:exons).grace], :sort => false
     organism = step(:reference).info[:inputs][:organism]
     exon_position = Sequence.exon_position(organism)
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Gene Strand Reference Allele"], :type => :single, :namespace => organism
     dumper.init
     count = 0
-    TSV.traverse pasted, :type => :array, :into => dumper do |line|
+    TSV.traverse pasted, :bar => "Gene strand reference", :type => :array, :into => dumper do |line|
       next if line =~ /#/
       count += 1
       position, reference, *exons = line.split("\t")
@@ -71,12 +77,13 @@ module Sequence
     Misc.consume_stream mutations
 
     gene_reference = step(:gene_strand_reference)
+    gene_reference.grace
     reference = step(:gene_strand_reference).step(:reference)
+    reference.grace
 
-    reference.join
-    gene_reference.join
+    reference.grace
 
-    dumper = TSV.paste_streams([gene_reference, reference], :type => :list, :sort => true)
+    dumper = TSV.paste_streams([gene_reference, reference], :sort => false)
 
     gene = 0
     watson = 0

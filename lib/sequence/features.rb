@@ -38,7 +38,7 @@ module Sequence
     dumper.init
     chromosome_files = {}
     exon_position = Sequence.exon_position(organism)
-    TSV.traverse positions, :type => :array, :into => dumper do |position|
+    TSV.traverse positions, :bar => "Exons", :type => :array, :into => dumper do |position|
       chr, pos = position.split(/[\s:\t]+/)
       next if pos.nil?
       chr.sub!(/^chr/i,'')
@@ -83,13 +83,14 @@ module Sequence
       positions = step(:genomic_mutations)
     end
     raise ParameterException, "No 'positions' specified" if positions.nil?
-    dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Ensembl Exon ID"], :type => :flat, :namespace => organism
-    dumper.init
-    exon_position = Sequence.exon_position(organism)
 
+    exon_position = Sequence.exon_position(organism)
     chromosome_files_start = {}
     chromosome_files_end = {}
-    TSV.traverse positions, :type => :array, :into => dumper do |position|
+
+    dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Ensembl Exon ID"], :type => :flat, :namespace => organism
+    dumper.init
+    TSV.traverse positions, :bar => "Junctions", :type => :array, :into => dumper do |position|
       chromosome, pos = position.split ":"
       next if pos.nil?
       pos = pos.to_i

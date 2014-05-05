@@ -139,8 +139,8 @@ module Sequence
   input :vcf_file, :text, "VCF file", nil, :stream => true
   input :quality, :float, "Quality threshold", 200
   task :genomic_mutations => :array do |vcf_file,quality|
-    Misc.consume_stream vcf_file, true
     expanded_vcf = step(:expanded_vcf)
+    Misc.consume_stream vcf_file, true 
 
     stream = TSV.traverse expanded_vcf, :key_field => "Genomic Mutation", :fields => ["Quality"], :cast => :to_f, :type => :single, :into => :stream do |mutation,qual|
       next if qual > 0 and qual > quality

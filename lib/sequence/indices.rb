@@ -64,8 +64,19 @@ module Sequence
     end
   end
 
+  def self.exon_transcripts(organism)
+    Persist.memory("exon_transcripts", :key => organism, :repo => CACHE) do
+      Organism.transcript_exons(organism).tsv(:key_field => "Ensembl Exon ID", :fields => ["Ensembl Transcript ID"], :type => :flat, :persist => true, :unnamed => true)
+    end
+  end
 
   #{{{ TRANSCRIPT CODING
+
+  def self.transcript_exons(organism)
+    Persist.memory("transcript_exons", :key => organism, :repo => CACHE) do
+      Organism.transcript_exons(organism).tsv(:persist => true, :unnamed => true)
+    end
+  end
 
   def self.transcript_sequence(organism)
     Persist.memory("transcript_sequence", :key => organism, :repo => CACHE) do

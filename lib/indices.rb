@@ -1,3 +1,4 @@
+require 'rbbt-util'
 require 'rbbt/sources/organism'
 module Sequence
 
@@ -188,3 +189,4 @@ module Sequence
     CACHE[:snv_position][key]
   end
 end
+
