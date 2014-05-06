@@ -31,6 +31,8 @@ checking this criteria.
 Specifying the `vcf` parameter will interpret the input as a VCF file, and will
 run the `genomic_mutations` task to extract the mutations from it
 
+The main tasks are: `mutated_isoforms_fast`, `splicing_mutations`, and `affected_genes`
+
 ## reference
 
 Report the reference base at the provided positions
