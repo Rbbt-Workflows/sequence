@@ -4,8 +4,9 @@ module Sequence
   input *ORGANISM_INPUT
   input *WATSON_INPUT
   input *VCF_INPUT
+  input *PRINCIPAL_INPUT
   dep &VCF_CONVERTER
-  task :mutated_isoforms_fast => :tsv do |mutations,organism,watson|
+  task :mutated_isoforms_fast => :tsv do |mutations,organism,watson,vcf,principal|
     if step(:genomic_mutations)
       Misc.consume_stream mutations, true
       mutations = step(:genomic_mutations)
@@ -54,6 +55,7 @@ module Sequence
           alleles = Sequence.alleles mut
 
           transcript_offsets.collect{|to| to.split ":" }.each do |transcript, transcript_offset, strand|
+            next if principal and not Appris::PRINCIPAL_TRANSCRIPTS.include?(transcript)
             protein = transcript_protein[transcript]
             next if protein.nil? or protein.empty?
 

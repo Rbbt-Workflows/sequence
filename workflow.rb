@@ -1,6 +1,8 @@
 require 'rbbt'
 require 'rbbt/workflow'
 
+Workflow.require_workflow "Appris"
+
 require 'sequence/indices'
 module Sequence
   extend Workflow
@@ -12,6 +14,7 @@ module Sequence
   POSITIONS_INPUT = [:positions, :array, "Positions Chr:Position (e.g. 19:54646887). Extra fields are ignored but kept", nil, :stream => true]
   RANGES_INPUT = [:ranges, :array, "Ranges Chr:Start:End (e.g. 19:54646887:54647887)", nil, :stream => true]
   WATSON_INPUT = [:watson, :boolean, "Mutations all reported on the watson (forward) strand as opposed to the gene strand", true]
+  PRINCIPAL_INPUT = [:principal, :boolean, "Consider only principal isoforms", false]
 
   VCF_INPUT = [:vcf, :boolean, "Is the input an VCF file instead of genomic mutations?", false]
   VCF_CONVERTER = Proc.new do |jobname,options|

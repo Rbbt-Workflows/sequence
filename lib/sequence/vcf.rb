@@ -80,10 +80,12 @@ module Sequence
         begin
           sin.puts TSV.header_lines "Genomic Mutation", stream_fields, :type => :list
           while line
+
             if line !~ /\w/
               line = vcf.gets
               next
             end
+
 
             line_values = []
 

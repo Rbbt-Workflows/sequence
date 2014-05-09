@@ -163,11 +163,12 @@ module Sequence
   input *ORGANISM_INPUT
   input *WATSON_INPUT
   input *VCF_INPUT
+  input *PRINCIPAL_INPUT
   dep do |jobname, options|
     options[:positions] = options[:mutations]
     Sequence.job(:transcript_offsets, jobname, options)
   end
-  task :mutated_isoforms => :tsv do |mutations,organism,watson|
+  task :mutated_isoforms => :tsv do |mutations,organism,watson,vcf,principal|
     Misc.consume_stream mutations, true
 
     transcript_protein = Sequence.transcript_protein(organism)
@@ -186,6 +187,7 @@ module Sequence
         alleles = Sequence.alleles mut
 
         transcript_offsets.collect{|to| to.split ":" }.each do |transcript, transcript_offset, strand|
+          next if principal and not Appris::PRINCIPAL_TRANSCRIPTS.include?(transcript)
           protein = transcript_protein[transcript]
           next if protein.nil? or protein.empty?
 
