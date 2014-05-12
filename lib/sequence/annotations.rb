@@ -10,6 +10,7 @@ module Sequence
     dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Ensembl Gene ID"], :type => :flat, :namespace => organism
     dumper.init
     TSV.traverse TSV.paste_streams([step(:mutated_isoforms), step(:splicing_mutations)], :sort => true), :bar => "Affected Genes", :type => :array, :into => dumper do |line|
+      next if line =~ /^#/
       m, *rest = line.split("\t")
       genes = rest.collect do |part|
         e = part.split(":").first
