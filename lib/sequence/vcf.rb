@@ -116,7 +116,6 @@ module Sequence
           vcf.join if vcf.respond_to? :join
           sin.close if sin.respond_to? :close
         rescue Exception
-          Log.exception $!
           sin.abort if sin.respond_to? :abort
           raise $!
         end
