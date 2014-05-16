@@ -84,7 +84,9 @@ overlap them.
 Computes the consequence of genomic mutations in terms of amino-acid changes in
 protein isoforms
 
-All isoforms of a gene are reported
+All isoforms of a gene are reported unless `principal` is selected, in which
+case, only consequences in princial isoforms will be reported (as defined by
+Appris)
 
 ## splicing_mutations
 
@@ -93,6 +95,10 @@ Find mutations that may affect the splicing of protein coding transcripts
 ## mutated_isoforms_fast
 
 One-step implementation of the `mutated_isoforms` task
+
+All isoforms of a gene are reported unless `principal` is selected, in which
+case, only consequences in princial isoforms will be reported (as defined by
+Appris)
 
 ## affected_genes
 
