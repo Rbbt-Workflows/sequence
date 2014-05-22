@@ -13,7 +13,7 @@ module Sequence
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Reference Allele"], :type => :single, :namespace => organism
     dumper.init
     chromosome_files = {}
-    TSV.traverse positions, :bar => "Reference", :type => :array, :into => dumper do |position|
+    TSV.traverse CMD.cmd('sort -t: -k2 -g', :in => TSV.get_stream(positions), :pipe => true), :bar => "Reference", :type => :array, :into => dumper do |position|
       begin
         chr, pos = position.split(/[\s:\t]+/)
         next if pos.nil?
