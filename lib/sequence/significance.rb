@@ -11,7 +11,7 @@ module Sequence
     end
 
     genes_step = step(:affected_genes)
-    organism = genes_step.info[:inputs][:organism]
+    organism = genes_step.step(:mutated_isoforms).info[:inputs][:organism]
 
     tsv = TSV.setup({}, :key_field => "Ensembl Gene ID", :fields => ["Matches", "Bases", "Frequency"], :namespace => organism, :type => :list, :cast => :to_f)
 
@@ -51,12 +51,14 @@ module Sequence
       tsv[gene] = [matches, exon_bases, frequency]
     end
 
-    tsv = tsv.R "
+    new = tsv.R "
       data = cbind(data,p.value=apply(data, 1, function(v){v = as.numeric(v); binom.test(v[1], v[2], #{ global_frequency }, 'greater')$p.value}))
       data
     ", :key => "Ensembl Gene ID" 
 
-    tsv
+
+    new.namespace = organism
+    new
   end
   export_asynchronous :binomial_significance
 end
