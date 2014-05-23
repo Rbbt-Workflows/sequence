@@ -143,7 +143,7 @@ module Sequence
     expanded_vcf = step(:expanded_vcf)
     Misc.consume_stream vcf_file, true 
 
-    stream = TSV.traverse expanded_vcf, :key_field => "Genomic Mutation", :fields => ["Quality"], :cast => :to_f, :type => :single, :into => :stream do |mutation,qual|
+    stream = TSV.traverse expanded_vcf, :bar => "Mutations from VCF", :key_field => "Genomic Mutation", :fields => ["Quality"], :cast => :to_f, :type => :single, :into => :stream do |mutation,qual|
       next if qual > 0 and qual > quality
       mutation
     end
