@@ -22,7 +22,7 @@ module Sequence
     dumper.init
     #log(:mutated_isoforms, :desc => "Mutated Isoforms") do |bar|
 
-      TSV.traverse mutations, :cpus => 2, :bar => "Mutated Iso. Fast", :into => dumper, :type => :array do |mutation|
+      TSV.traverse mutations, :_cpus => 2, :bar => "Mutated Iso. Fast", :into => dumper, :type => :array do |mutation|
         next if mutation.nil?
         chr, pos, mut_str = mutation.split(":")
         next if mut_str.nil?
