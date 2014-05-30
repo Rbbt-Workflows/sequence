@@ -108,7 +108,15 @@ protein products, or by changes in splicing sequences
 ## binomial_significance
 
 For a list of mutations, find genes that suffer a higher rate of mutation than
-expected
+expected. Considers only relevant mutations
+
+Uses a binomial distribution with a global probablity of mutation estimated
+from the data. Considers only exon bases
+
+## binomial_significance_syn
+
+For a list of mutations, find genes that suffer a higher rate of mutation than
+expected. Considers also synonymous mutations
 
 Uses a binomial distribution with a global probablity of mutation estimated
 from the data. Considers only exon bases
