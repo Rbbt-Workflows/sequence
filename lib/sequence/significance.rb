@@ -105,9 +105,6 @@ module Sequence
       next if exon_bases == 0
       frequency = matches.to_f / exon_bases
 
-      #pvalue = RSRuby.instance.binom_test(matches, exon_bases, global_frequency, 'greater')["p.value"]
-      #tsv[gene] = [matches, exon_bases, frequency, pvalue]
-      
       tsv[gene] = [matches, exon_bases, frequency]
     end
 
