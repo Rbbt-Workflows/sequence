@@ -1,8 +1,4 @@
 module Sequence
-  input *MUTATIONS_INPUT
-  input *ORGANISM_INPUT
-  input *WATSON_INPUT
-  input *VCF_INPUT
 
   def self.alleles(mut)
     case
