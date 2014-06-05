@@ -99,4 +99,15 @@ module Sequence
     gene >= watson
   end
   export_synchronous :is_watson
+
+  dep :reference
+  task :add_reference => :array do 
+    TSV.traverse step(:reference).grace, :type => :array, :into => :stream do |line|
+      next if line =~ /^#/
+      mut, ref = line.split "\t"
+      parts = mut.split ":"
+      [parts[0],parts[1],ref + ">" + parts[2]] * ":"
+    end
+  end
+  export_asynchronous :add_reference
 end

@@ -4,12 +4,6 @@ module Sequence
 
   dep :affected_genes
   task :binomial_significance => :tsv do 
-    begin
-      require 'rsruby'
-    rescue
-      raise "You must install rsruby gem to run this task"
-    end
-
     genes_step = step(:affected_genes)
     organism = genes_step.step(:mutated_isoforms).info[:inputs][:organism]
 
@@ -64,12 +58,6 @@ module Sequence
 
   dep :genes
   task :binomial_significance_syn => :tsv do 
-    begin
-      require 'rsruby'
-    rescue
-      raise "You must install rsruby gem to run this task"
-    end
-
     genes_step = step(:genes)
     organism = genes_step.info[:inputs][:organism]
 
@@ -112,7 +100,6 @@ module Sequence
       data = cbind(data,p.value=apply(data, 1, function(v){v = as.numeric(v); binom.test(v[1], v[2], #{ global_frequency }, 'greater')$p.value}))
       data
     ", :key => "Ensembl Gene ID" 
-
 
     new.namespace = organism
     new

@@ -37,6 +37,10 @@ The main tasks are: `mutated_isoforms_fast`, `splicing_mutations`, and `affected
 
 Report the reference base at the provided positions
 
+## add_reference
+
+Add reference to mutations as (ref\>mut)
+
 ## gene_strand_reference
 
 Report the reference base at the provided positions on the gene coding strand
