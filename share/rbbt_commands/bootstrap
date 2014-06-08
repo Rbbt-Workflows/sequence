@@ -1868,7 +1868,10 @@ jobs.shuffle!
 
 procs = ARGV.shift || "1"
 require 'rbbt/util/semaphore'
-RbbtSemaphore.fork_each_on_semaphore(jobs, procs.to_i) do |job|
-  job.run(true)
+
+jobs.each do |job|
+  job.run(true).grace
 end
+
+Step.wait_for_jobs(jobs)
 

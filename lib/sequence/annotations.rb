@@ -7,6 +7,8 @@ module Sequence
     protein_index = Organism.identifiers(organism).index :target => "Ensembl Gene ID", :fields => ["Ensembl Protein ID"], :persist => true
     transcript_index = Organism.gene_transcripts(organism).index :target => "Ensembl Gene ID", :fields => ["Ensembl Transcript ID"], :persist => true
 
+    Step.wait_for_jobs([step(:mutated_isoforms), step(:splicing_mutations)])
+
     dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Ensembl Gene ID"], :type => :flat, :namespace => organism
     dumper.init
     TSV.traverse TSV.paste_streams([step(:mutated_isoforms), step(:splicing_mutations)], :sort => true), :bar => "Affected Genes", :type => :array, :into => dumper do |line|
