@@ -1843,10 +1843,10 @@ mutations_hg18, mutations_hg19 = MUTATIONS.split("@").collect{|l| l.split("\n").
 mutations["Hsa/may2009"] = mutations_hg18
 mutations["Hsa/jun2011"] = mutations_hg19
 mutations["Hsa/jan2013"] = mutations_hg19
-mutations["Hsa"] = mutations_hg19
+mutations["Hsa/dec2013"] = mutations_hg19
 
 jobs = []
-%w(Hsa Hsa/jun2011 Hsa/may2009 Hsa/jan2013).each do |organism|
+mutations.keys.each do |organism|
     params = { :mutations => mutations[organism].dup, :organism => organism }
 
     job = Sequence.job(:mutated_isoforms, "BOOTSTRAP", params)

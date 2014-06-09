@@ -81,7 +81,7 @@ module Sequence
     Misc.consume_stream _muts, true
     reference_job = watson ? step(:reference) : step(:gene_strand_reference)
 
-    reference_job.grace
+    #reference_job.grace
     organism = reference_job.info[:inputs][:organism]
     mutation_type = TSV::Dumper.new(:key_field => "Genomic Mutation", :fields => ["Mutation type"], :type => :single, :namespace => organism)
     mutation_type.init

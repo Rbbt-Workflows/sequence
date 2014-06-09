@@ -5,7 +5,7 @@ module Sequence
   dep :affected_genes
   task :binomial_significance => :tsv do 
     genes_step = step(:affected_genes)
-    organism = genes_step.step(:mutated_isoforms).info[:inputs][:organism]
+    organism = genes_step.step(:mutated_isoforms_fast).inputs[1]
 
     tsv = TSV.setup({}, :key_field => "Ensembl Gene ID", :fields => ["Matches", "Bases", "Frequency"], :namespace => organism, :type => :list, :cast => :to_f)
 

@@ -13,7 +13,8 @@ module Sequence
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Reference Allele"], :type => :single, :namespace => organism
     dumper.init
     chromosome_files = {}
-    TSV.traverse CMD.cmd('sort -t: -k2 -g', :in => TSV.get_stream(positions), :pipe => true), :bar => "Reference", :type => :array, :into => dumper do |position|
+    #TSV.traverse CMD.cmd('sort -t: -k2 -g', :in => TSV.get_stream(positions), :pipe => true), :bar => "Reference", :type => :array, :into => dumper do |position|
+    TSV.traverse positions, :bar => "Reference", :type => :array, :into => dumper do |position|
       begin
         chr, pos = position.split(/[\s:\t]+/)
         next if pos.nil?
@@ -29,7 +30,7 @@ module Sequence
         file.seek pos.to_i - 1
         ref = file.getc
         [position, ref]
-      rescue
+      rescue Exception
         Log.exception $!
         [position, "?"]
       end
@@ -40,8 +41,6 @@ module Sequence
   dep :reference
   dep :exons
   task :gene_strand_reference => :tsv do 
-    step(:reference).grace
-    step(:exons).grace
     pasted = TSV.paste_streams [step(:reference).grace, step(:exons).grace], :sort => false
     organism = step(:reference).info[:inputs][:organism]
     exon_position = Sequence.exon_position(organism)
