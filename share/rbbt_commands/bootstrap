@@ -1832,6 +1832,7 @@ X:12516790:+-
 7:899839:T
 9:98232095:G
 EOF
+
 require 'rbbt/workflow'
 
 Workflow.require_workflow "Sequence"
@@ -1843,35 +1844,31 @@ mutations_hg18, mutations_hg19 = MUTATIONS.split("@").collect{|l| l.split("\n").
 mutations["Hsa/may2009"] = mutations_hg18
 mutations["Hsa/jun2011"] = mutations_hg19
 mutations["Hsa/jan2013"] = mutations_hg19
-#mutations["Hsa/dec2013"] = mutations_hg19
+mutations["Hsa/dec2013"] = mutations_hg19
 
 jobs = []
 mutations.keys.each do |organism|
-    params = { :mutations => mutations[organism].dup, :organism => organism }
 
-    job = Sequence.job(:mutated_isoforms, "BOOTSTRAP", params)
-    job.clean
-    jobs << job
+  params = { :mutations => mutations[organism].dup, :organism => organism }
 
-    params = { :positions => mutations[organism].dup, :organism => organism }
-    job = Sequence.job(:exon_junctions, "BOOTSTRAP", params)
-    job.clean
-    jobs << job
+  job = Sequence.job(:mutated_isoforms, "BOOTSTRAP-#{organism}", params)
+  job.clean
+  jobs << job
 
-    params = { :positions => mutations[organism].dup, :organism => organism }
-    job = Sequence.job(:genes, "BOOTSTRAP", params)
-    job.clean
-    jobs << job
+  params = { :positions => mutations[organism].dup, :organism => organism }
+  job = Sequence.job(:exon_junctions, "BOOTSTRAP-#{organism}", params)
+  job.clean
+  jobs << job
+
+  params = { :positions => mutations[organism].dup, :organism => organism }
+  job = Sequence.job(:genes, "BOOTSTRAP-#{organism}", params)
+  job.clean
+  jobs << job
 end
-
-jobs.shuffle! 
-
-procs = ARGV.shift || "1"
-require 'rbbt/util/semaphore'
 
 jobs.each do |job|
   job.run(true).grace
 end
-
 Step.wait_for_jobs(jobs)
+
 
