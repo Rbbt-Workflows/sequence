@@ -40,13 +40,13 @@ module Sequence
   dep :reference
   dep :exons
   task :gene_strand_reference => :tsv do 
-    pasted = TSV.paste_streams [step(:reference).grace, step(:exons).grace]
-    organism = step(:reference).info[:inputs][:organism]
+    pasted = TSV.paste_streams [step(:reference), step(:exons)], :sort => false
+    organism = step(:reference).inputs["organism"]
     exon_position = Sequence.exon_position(organism)
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Gene Strand Reference Allele"], :type => :single, :namespace => organism
     dumper.init
     count = 0
-    TSV.traverse pasted, :bar => "Gene strand reference", :type => :array, :into => dumper do |line|
+    res = TSV.traverse pasted, :bar => "Gene strand reference", :type => :array, :into => dumper do |line|
       next if line =~ /#/
       count += 1
       position, reference, *exons = line.split("\t")
@@ -63,6 +63,7 @@ module Sequence
         end
       end
     end
+    res
   end
   export_synchronous :gene_strand_reference
 
@@ -75,11 +76,7 @@ module Sequence
     Misc.consume_stream mutations
 
     gene_reference = step(:gene_strand_reference)
-    gene_reference.grace
     reference = step(:gene_strand_reference).step(:reference)
-    reference.grace
-
-    reference.grace
 
     dumper = TSV.paste_streams([gene_reference, reference], :sort => false)
 
@@ -100,7 +97,7 @@ module Sequence
 
   dep :reference
   task :add_reference => :array do 
-    TSV.traverse step(:reference).grace, :type => :array, :into => :stream do |line|
+    TSV.traverse step(:reference), :type => :array, :into => :stream do |line|
       next if line =~ /^#/
       mut, ref = line.split "\t"
       parts = mut.split ":"

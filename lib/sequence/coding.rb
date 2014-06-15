@@ -81,8 +81,7 @@ module Sequence
     Misc.consume_stream _muts, true
     reference_job = watson ? step(:reference) : step(:gene_strand_reference)
 
-    #reference_job.grace
-    organism = reference_job.info[:inputs][:organism]
+    organism = step(:reference).inputs["organism"]
     mutation_type = TSV::Dumper.new(:key_field => "Genomic Mutation", :fields => ["Mutation type"], :type => :single, :namespace => organism)
     mutation_type.init
     TSV.traverse reference_job, :bar => "Type", :into => mutation_type do |mutation, reference|
@@ -171,7 +170,7 @@ module Sequence
 
     dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Mutated Isoform"], :type => :flat, :namespace => organism
     dumper.init
-    TSV.traverse step(:transcript_offsets), :bar => "Mutated Isoforms", :_cpus => 2, :into => dumper, :type => :flat do |mutation,transcript_offsets|
+    TSV.traverse step(:transcript_offsets), :bar => "Mutated Isoforms", :into => dumper, :type => :flat do |mutation,transcript_offsets|
       next if mutation.nil?
       chr, pos, mut_str = mutation.split(":")
       next if mut_str.nil?
@@ -245,15 +244,12 @@ module Sequence
     type = step(:type)
     exon_junctions = step(:exon_junctions)
 
-    type.grace
-    exon_junctions.grace
-
     organism = exon_junctions.info[:inputs][:organism]
     transcript_exons = Sequence.transcript_exons(organism)
     exon_transcripts = Sequence.exon_transcripts(organism)
     dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Affected Transcripts"], :namespace => organism, :type => :flat
     dumper.init
-    TSV.traverse TSV.paste_streams([type, exon_junctions], :sort => false), :bar => "Splicing Mutations", :type => :array, :into => dumper do |line|
+    TSV.traverse TSV.paste_streams([type, exon_junctions], :sort => true), :bar => "Splicing Mutations", :type => :array, :into => dumper do |line|
       mutation, type, *exon_junctions = line.split "\t"
       next if type == "none" or type == "unknown"
       next if exon_junctions.empty?

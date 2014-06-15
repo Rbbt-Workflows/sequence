@@ -26,7 +26,7 @@ module Sequence
         end
       end
 
-      return [header, next_line]
+      return [header, next_line, lines * "" ]
     end
 
     def self.parse_info_fields(info_fields, info)
@@ -54,9 +54,87 @@ module Sequence
       res
     end
 
-    def self.open_stream(vcf, no_info = false, no_format = false)
+    def self.save_stream(stream)
+      parser = TSV::Parser.new stream, :type => :list
+      fields = parser.fields
+
+      raise "No fields in stream" if fields.nil? or fields.empty?
+      # Sample fields
+      tmp = fields[4..-1]
+      sample_fields = {}
+      sample_field_names = Set.new
+
+      while field = tmp.shift
+        break unless field =~ /(.+):(.+)/
+        sample, name = $1,$2
+        sample_fields[sample] ||= []
+        sample_fields[sample] << field
+        sample_field_names << name
+      end
+
+      if sample_fields.any? and 
+          sample_fields.values.first.length > 1 and 
+          sample_fields.values.collect{|l| l.sort}.uniq.length == 1
+
+        has_samples = true
+        format = sample_field_names.to_a.sort * ":"
+        samples = sample_fields.keys
+        all_sample_fields = sample_fields.values.flatten
+        all_sample_field_pos = all_sample_fields.collect{|f| TSV.identify_field(nil, fields, f)+1 }
+      else
+        has_samples = false
+      end
+
+      # INFO fields
+      info_fields = fields[4..-1]
+      info_fields -= all_sample_fields if has_samples
+      info_fields_pos = info_fields.collect{|f| TSV.identify_field(nil, fields, f) + 1 }
+
+      vcf_key = "CHROM"
+      vcf_fields = %w(POS ID REF ALT QUAL FILTER)
+      vcf_fields << "INFO" if info_fields.any?
+      vcf_fields << "FORMAT" if has_samples
+      vcf_fields += samples if has_samples
+
+      dumper = TSV::Dumper.new :key_field => vcf_key, :fields => vcf_fields, :preamble => parser.preamble
+      dumper.init
+      TSV.traverse parser.stream, :into => dumper, :type => :array do |line|
+
+        parts = line.split("\t",-1)
+        mutation, orig, id, qual, filter = parts
+
+        chr, pos, ref, alt = orig.split ":"
+        res = [pos, id, ref, alt, qual, filter]
+        if info_fields.any?
+          info_values = parts.values_at *info_fields_pos
+          str = info_fields.dup.zip(info_values).reject{|p| p[1].nil? or p[1].empty?}.collect{|f,v| [f.gsub(/\s/,'_'), v] * "=" } * ";"
+          res << str
+        end
+
+        if has_samples
+          sample_data = {}
+          sample_values = parts.values_at *all_sample_field_pos
+          all_sample_fields.zip(sample_values).collect do |sample_field,value|
+            sample, field = sample_field.split ":"
+            sample_data[sample] ||= {}
+            sample_data[sample][field] = value
+          end
+          sample_columns = []
+          samples.each do |sample|
+            sample_columns << sample_data[sample].values_at(*sample_fields)
+          end
+          res << format
+          res += sample_columns
+        end
+
+        [chr, res]
+      end
+      dumper
+    end
+
+    def self.open_stream(vcf, no_info = false, no_format = false, no_preamble = false)
       vcf = TSV.get_stream vcf
-      header, line = header vcf
+      header, line, preamble = header vcf
 
       if line =~ /#/
         fields = line.sub(/^#/,'').split(/\s+/)
@@ -72,13 +150,15 @@ module Sequence
       format_pos = fields.index("FORMAT") unless no_format
       sample_fields = format_pos ? fields[format_pos+1..-1] : []
 
-      stream_fields = ["RS ID", "Quality"]
-      stream_fields.concat info_fields if info_pos
+      stream_fields = ["Original", "RS ID", "Quality", "Filter"]
       stream_fields.concat sample_fields.collect{|s| format_fields.collect{|f| [s,f] * ":" }}.flatten if format_pos
+      stream_fields.concat info_fields if info_pos
 
       Misc.open_pipe false, false do |sin|
         begin
-          sin.puts TSV.header_lines "Genomic Mutation", stream_fields, :type => :list
+          preamble = nil if no_preamble 
+          header_lines = TSV.header_lines "Genomic Mutation", stream_fields, :type => :list, :preamble => preamble
+          sin.puts header_lines
           while line
 
             if line !~ /\w/
@@ -86,27 +166,32 @@ module Sequence
               next
             end
 
-
             line_values = []
 
             chr, position, id, ref, alt, qual, filter, *rest = parts = line.split(/\s+/)
+            orig = [chr,position,ref,alt] * ":"
+
             chr.sub! 'chr', ''
 
             position, alt = Misc.correct_vcf_mutation(position.to_i, ref, alt)
             mutation = [chr, position.to_s, alt * ","] * ":"
 
+            orig = [chr,position,ref,alt] * ":"
+
             line_values << mutation
+            line_values << orig
             line_values << id
             line_values << qual
-
-            if info_pos
-              info_values = parse_info_fields(info_fields, parts[info_pos])
-              line_values.concat info_values
-            end
+            line_values << filter
 
             if format_pos
               format_values = parse_format_fields(format_fields, parts[format_pos], parts[format_pos+1..-1])
               line_values.concat format_values
+            end
+
+            if info_pos
+              info_values = parse_info_fields(info_fields, parts[info_pos])
+              line_values.concat info_values
             end
 
             sin.puts line_values * "\t"
@@ -130,12 +215,14 @@ module Sequence
   input :vcf_file, :text, "VCF file", nil, :stream => true
   input :info, :boolean, "Expand the INFO field", true
   input :format, :boolean, "Expand the sample FORMAT fields", true
-  task :expanded_vcf => :tsv do |vcf,info,format|
-    Sequence::VCF.open_stream(vcf, !info, !format)
+  input :preamble, :boolean, "Retain file preamble (With field descriptions)", true
+  task :expanded_vcf => :tsv do |vcf,info,format,preamble|
+    Sequence::VCF.open_stream(vcf, !info, !format,!preamble)
   end
 
   dep do |name, options|
-    Sequence.job(:expanded_vcf, name, options.merge({:info => false, :format => false}))
+    options = Misc.add_defaults options, :info => false, :format => false, :preamble => false
+    Sequence.job(:expanded_vcf, name, options)
   end
   input :vcf_file, :text, "VCF file", nil, :stream => true
   input :quality, :float, "Quality threshold", 200
@@ -143,8 +230,8 @@ module Sequence
     expanded_vcf = step(:expanded_vcf)
     Misc.consume_stream vcf_file, true 
 
-    stream = TSV.traverse expanded_vcf, :bar => "Mutations from VCF", :key_field => "Genomic Mutation", :fields => ["Quality"], :cast => :to_f, :type => :single, :into => :stream do |mutation,qual|
-      next if qual > 0 and qual > quality
+    TSV.traverse expanded_vcf, :bar => "Mutations from VCF", :key_field => "Genomic Mutation", :fields => ["Quality"], :cast => :to_f, :type => :single, :into => :stream do |mutation,qual|
+      next if qual > 0 and qual < quality
       mutation
     end
   end
