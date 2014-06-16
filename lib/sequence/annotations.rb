@@ -14,7 +14,7 @@ module Sequence
       m, *rest = line.split("\t")
       genes = rest.collect do |part|
         next if part.nil? or part.empty?
-        e,c = part.split(":").first
+        e, c = part.split(":")
         g = if e =~ /ENSP/
               next unless c =~ /^([A-Z*])\d+([A-Z*])/ and $1 != $2
               protein_index[e]

@@ -129,7 +129,7 @@ module Sequence
 
         [chr, res]
       end
-      dumper
+      dumper.stream
     end
 
     def self.open_stream(vcf, no_info = false, no_format = false, no_preamble = false)
