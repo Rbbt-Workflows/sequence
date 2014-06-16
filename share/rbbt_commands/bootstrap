@@ -1852,23 +1852,21 @@ mutations.keys.each do |organism|
   params = { :mutations => mutations[organism].dup, :organism => organism }
 
   job = Sequence.job(:mutated_isoforms, "BOOTSTRAP-#{organism}", params)
-  job.clean
   jobs << job
 
   params = { :positions => mutations[organism].dup, :organism => organism }
   job = Sequence.job(:exon_junctions, "BOOTSTRAP-#{organism}", params)
-  job.clean
   jobs << job
 
   params = { :positions => mutations[organism].dup, :organism => organism }
   job = Sequence.job(:genes, "BOOTSTRAP-#{organism}", params)
-  job.clean
   jobs << job
 end
 
 jobs.each do |job|
   job.run(true).grace
 end
+
 Step.wait_for_jobs(jobs)
 
 
