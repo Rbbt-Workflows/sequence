@@ -159,11 +159,12 @@ module Sequence
   input *WATSON_INPUT
   input *VCF_INPUT
   input *PRINCIPAL_INPUT
+  input *NS_INPUT
   dep do |jobname, options|
     options[:positions] = options[:mutations]
     Sequence.job(:transcript_offsets, jobname, options)
   end
-  task :mutated_isoforms => :tsv do |mutations,organism,watson,vcf,principal|
+  task :mutated_isoforms => :tsv do |mutations,organism,watson,vcf,principal,ns|
     Misc.consume_stream mutations, true
 
     transcript_protein = Sequence.transcript_protein(organism)
@@ -220,6 +221,7 @@ module Sequence
           end
         end
       end
+      mis.reject!{|mi| mi !~ /ENSP\d+:([A-Z*]+)\d+([A-Z*]+)/ or $1 == $2 } if ns
       next if mis.empty?
 
       [mutation, mis]

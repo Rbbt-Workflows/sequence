@@ -176,8 +176,6 @@ module Sequence
             position, alt = Misc.correct_vcf_mutation(position.to_i, ref, alt)
             mutation = [chr, position.to_s, alt * ","] * ":"
 
-            orig = [chr,position,ref,alt] * ":"
-
             line_values << mutation
             line_values << orig
             line_values << id

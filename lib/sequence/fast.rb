@@ -5,8 +5,9 @@ module Sequence
   input *WATSON_INPUT
   input *VCF_INPUT
   input *PRINCIPAL_INPUT
+  input *NS_INPUT
   dep &VCF_CONVERTER
-  task :mutated_isoforms_fast => :tsv do |mutations,organism,watson,vcf,principal|
+  task :mutated_isoforms_fast => :tsv do |mutations,organism,watson,vcf,principal,ns|
     if step(:genomic_mutations)
       Misc.consume_stream mutations, true
       mutations = step(:genomic_mutations)
@@ -92,6 +93,7 @@ module Sequence
           end
         end
       end
+      mis.reject!{|mi| mi !~ /ENSP\d+:([A-Z*]+)\d+([A-Z*]+)/ or $1 == $2 } if ns
       next if mis.empty?
 
       [mutation, mis]
