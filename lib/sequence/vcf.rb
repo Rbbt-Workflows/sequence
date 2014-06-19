@@ -76,11 +76,15 @@ module Sequence
           sample_fields.values.first.length > 1 and 
           sample_fields.values.collect{|l| l.sort}.uniq.length == 1
 
-        has_samples = true
-        format = sample_field_names.to_a.sort * ":"
+
+        sample_field_names = sample_field_names.to_a
+        format = sample_field_names * ":"
+
         samples = sample_fields.keys
         all_sample_fields = sample_fields.values.flatten
         all_sample_field_pos = all_sample_fields.collect{|f| TSV.identify_field(nil, fields, f)+1 }
+
+        has_samples = true
       else
         has_samples = false
       end
@@ -88,7 +92,8 @@ module Sequence
       # INFO fields
       info_fields = fields[4..-1]
       info_fields -= all_sample_fields if has_samples
-      info_fields_pos = info_fields.collect{|f| TSV.identify_field(nil, fields, f) + 1 }
+      iii info_fields
+      info_fields_pos = info_fields.collect{|f| TSV.identify_field(nil, fields, f)  }
 
       vcf_key = "CHROM"
       vcf_fields = %w(POS ID REF ALT QUAL FILTER)
@@ -98,10 +103,8 @@ module Sequence
 
       dumper = TSV::Dumper.new :key_field => vcf_key, :fields => vcf_fields, :preamble => parser.preamble
       dumper.init
-      TSV.traverse parser.stream, :into => dumper, :type => :array do |line|
-
-        parts = line.split("\t",-1)
-        mutation, orig, id, qual, filter = parts
+      TSV.traverse parser, :into => dumper, :type => :array do |mutation,parts|
+        orig, id, qual, filter = parts
 
         chr, pos, ref, alt = orig.split ":"
         res = [pos, id, ref, alt, qual, filter]
@@ -114,14 +117,15 @@ module Sequence
         if has_samples
           sample_data = {}
           sample_values = parts.values_at *all_sample_field_pos
-          all_sample_fields.zip(sample_values).collect do |sample_field,value|
+          all_sample_fields.zip(sample_values).each do |sample_field,value|
             sample, field = sample_field.split ":"
             sample_data[sample] ||= {}
             sample_data[sample][field] = value
           end
           sample_columns = []
           samples.each do |sample|
-            sample_columns << sample_data[sample].values_at(*sample_fields)
+            fields = sample_field_names
+            sample_columns << sample_data[sample].values_at(*fields) * ":"
           end
           res << format
           res += sample_columns
@@ -223,13 +227,13 @@ module Sequence
     Sequence.job(:expanded_vcf, name, options)
   end
   input :vcf_file, :text, "VCF file", nil, :stream => true
-  input :quality, :float, "Quality threshold", 200
+  input :quality, :float, "Quality threshold", nil
   task :genomic_mutations => :array do |vcf_file,quality|
     expanded_vcf = step(:expanded_vcf)
     Misc.consume_stream vcf_file, true 
 
     TSV.traverse expanded_vcf, :bar => "Mutations from VCF", :key_field => "Genomic Mutation", :fields => ["Quality"], :cast => :to_f, :type => :single, :into => :stream do |mutation,qual|
-      next if qual > 0 and qual < quality
+      next if quality and qual > 0 and qual < quality
       mutation
     end
   end
