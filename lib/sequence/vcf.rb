@@ -92,7 +92,6 @@ module Sequence
       # INFO fields
       info_fields = fields[4..-1]
       info_fields -= all_sample_fields if has_samples
-      iii info_fields
       info_fields_pos = info_fields.collect{|f| TSV.identify_field(nil, fields, f)  }
 
       vcf_key = "CHROM"

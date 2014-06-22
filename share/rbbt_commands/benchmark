@@ -14,6 +14,7 @@ file, *sizes = ARGV
 plot = options[:plot] || 'plot.png'
 options[:method] = options[:method].split(",") if options[:method]
 log = Log.severity
+
 times = {
   "ANNOVAR" => [],
   "Sequence_nostream" => [], 
@@ -35,7 +36,8 @@ sizes.each do |size|
     jobname = [File.basename(file), size] * "."
     if options[:method].nil? or options[:method].include? "ANNOVAR"
       Log.info "annovar" + " " +  size.to_s
-      job = Annovar.job(:analysis, jobname, :genomic_mutations => Open.read(tmpfile).split("\n"))
+      job = Annovar.job(:analysis, jobname, :positions => Open.read(tmpfile).split("\n"))
+      #job.clean
       job.fork.join
       time = job.info[:process_time]
       times["ANNOVAR"] << time

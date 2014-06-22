@@ -1,0 +1,44 @@
+#!/usr/bin/env ruby
+
+require 'rbbt-util'
+require 'rbbt/util/simpleopt'
+
+$0 = "rbbt #{$previous_commands*""} #{ File.basename(__FILE__) }" if $previous_commands
+
+options = SOPT.setup <<EOF
+
+Compares results from mutated_isoforms 
+
+$ rbbt workflow cmd Sequence cmp_res file1 file2
+
+-h--help Print this help
+
+EOF
+rbbt_usage and exit 0 if options[:help]
+
+file1, file2 = ARGV
+s1 = TSV.get_stream file1
+s2 = TSV.get_stream file2
+
+ds1 = TSV.stream_flat2double s1
+
+ds2 = TSV.stream_flat2double s2
+
+p = TSV.paste_streams([ds1,ds2], :sort => true)
+
+
+dumper = TSV::Dumper.new :key_field => "Genomic mutation", :fields => [file1, file2], :type => :double
+dumper.init
+
+TSV.traverse p, :into => dumper do |mutation, values|
+  v1, v2 = values
+
+  n1 = v1 - v2
+  n2 = v2 - v1
+
+  next if n1.empty? and n2.empty?
+  [mutation.first, [n1, n2]]
+end
+
+puts dumper.stream.read
+
