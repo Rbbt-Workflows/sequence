@@ -1,4 +1,5 @@
 module Sequence
+
   dep :mutated_isoforms_fast
   dep :splicing_mutations
   task :affected_genes => :tsv do

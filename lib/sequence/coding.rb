@@ -236,7 +236,7 @@ module Sequence
     options.merge!(:positions => options[:mutations])
     Sequence.job(:exon_junctions, jobname, options)
   end
-  dep :type
+  #dep :type
   input *MUTATIONS_INPUT
   input *ORGANISM_INPUT
   input *WATSON_INPUT
@@ -251,9 +251,11 @@ module Sequence
     exon_transcripts = Sequence.exon_transcripts(organism)
     dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Affected Transcripts"], :namespace => organism, :type => :flat
     dumper.init
-    TSV.traverse TSV.paste_streams([type, exon_junctions], :sort => true), :bar => "Splicing Mutations", :type => :array, :into => dumper do |line|
-      mutation, type, *exon_junctions = line.split "\t"
-      next if type == "none" or type == "unknown"
+    #TSV.traverse TSV.paste_streams([type, exon_junctions], :sort => true), :bar => "Splicing Mutations", :type => :array, :into => dumper do |line|
+    #mutation, type, *exon_junctions = line.split "\t"
+    #next if type == "none" or type == "unknown"
+    TSV.traverse exon_junctions, :bar => "Splicing Mutations", :type => :array, :into => dumper do |line|
+      mutation, *exon_junctions = line.split "\t"
       next if exon_junctions.empty?
       affected_transcripts = []
       exon_junctions.each do |junction|

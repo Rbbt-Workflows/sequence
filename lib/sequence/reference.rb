@@ -13,6 +13,7 @@ module Sequence
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Reference Allele"], :type => :single, :namespace => organism
     dumper.init
     chromosome_files = {}
+
     TSV.traverse positions, :bar => "Reference", :type => :array, :into => dumper do |position|
       begin
         chr, pos = position.split(/[\s:\t]+/)
@@ -75,10 +76,13 @@ module Sequence
   task :is_watson => :boolean do |mutations,organism|
     Misc.consume_stream mutations
 
+
     gene_reference = step(:gene_strand_reference)
+    Step.wait_for_jobs [gene_reference]
+
     reference = step(:gene_strand_reference).step(:reference)
 
-    dumper = TSV.paste_streams([gene_reference, reference], :sort => false)
+    dumper = TSV.paste_streams([gene_reference, reference], :sort => true)
 
     gene = 0
     watson = 0
