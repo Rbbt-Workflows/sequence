@@ -94,7 +94,7 @@ module Sequence
     TSV.traverse positions, :bar => "Junctions", :type => :array, :into => dumper do |position|
       chromosome, pos = position.split ":"
       next if pos.nil?
-      chr.sub!(/^chr/i,'')
+      chromosome.sub!(/^chr/i,'')
       pos = pos.to_i
       junctions = []
       start_index = chromosome_files_start[chromosome] ||= Sequence.exon_start_index(organism, chromosome)
