@@ -14,4 +14,12 @@ module Sequence
 
     CMD.cmd('sort -n|cut -f 2', :in => stream, :pipe => true)
   end
+
+  input :positions, :array, "Genomic positions"
+  input :source, :string, "Original organism code and build", "Hsa/may2009"
+  input :target, :string, "Target organism code and build", "Hsa/jan2013"
+  task :lift_over => :array do |positions, source, target|
+    raise ParameterException, "No positions given" if positions.nil?
+    Organism.liftOver(positions, source, target)
+  end
 end
