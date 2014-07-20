@@ -17,20 +17,20 @@ mutations["Hsa/dec2013"] = mutations_hg19
 jobs = []
 mutations.keys.each do |organism|
 
-  params = { :mutations => mutations[organism].dup, :organism => organism, :watson => false}
+  params = { :positions => mutations[organism].dup, :organism => organism}
 
   job = Sequence.job(:reference, "BOOTSTRAP-#{organism}", params)
   jobs << job
 
-  params = { :positions => mutations[organism].dup, :organism => organism }
+  params = { :mutations => mutations[organism].dup, :organism => organism, :watson => false }
   job = Sequence.job(:affected_genes, "BOOTSTRAP-#{organism}", params)
   jobs << job
 
-  params = { :positions => mutations[organism].dup, :organism => organism }
+  params = { :positions => mutations[organism].dup, :organism => organism}
   job = Sequence.job(:genes, "BOOTSTRAP-#{organism}", params)
   jobs << job
 
-  params = { :positions => mutations[organism].dup, :organism => organism }
+  params = { :positions => mutations[organism].dup, :organism => organism}
   job = Sequence.job(:transcripts, "BOOTSTRAP-#{organism}", params)
   jobs << job
 end
