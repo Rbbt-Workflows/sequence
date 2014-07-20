@@ -19,15 +19,19 @@ mutations.keys.each do |organism|
 
   params = { :mutations => mutations[organism].dup, :organism => organism, :watson => false}
 
-  job = Sequence.job(:mutated_isoforms, "BOOTSTRAP-#{organism}", params)
+  job = Sequence.job(:reference, "BOOTSTRAP-#{organism}", params)
   jobs << job
 
   params = { :positions => mutations[organism].dup, :organism => organism }
-  job = Sequence.job(:exon_junctions, "BOOTSTRAP-#{organism}", params)
+  job = Sequence.job(:affected_genes, "BOOTSTRAP-#{organism}", params)
   jobs << job
 
   params = { :positions => mutations[organism].dup, :organism => organism }
   job = Sequence.job(:genes, "BOOTSTRAP-#{organism}", params)
+  jobs << job
+
+  params = { :positions => mutations[organism].dup, :organism => organism }
+  job = Sequence.job(:transcripts, "BOOTSTRAP-#{organism}", params)
   jobs << job
 end
 
