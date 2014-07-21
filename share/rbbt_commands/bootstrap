@@ -9,10 +9,17 @@ Workflow.require_workflow "Sequence"
 
 mutations = {}
 
-mutations["Hsa/may2009"] = mutations_hg18
-mutations["Hsa/jun2011"] = mutations_hg19
-mutations["Hsa/jan2013"] = mutations_hg19
-mutations["Hsa/dec2013"] = mutations_hg19
+Organism.organism_codes.each do |code|
+    if code =~ /Hsa/
+        build = Organism.hg_build code
+        mutations[code] = build == 'hg19' ? mutations_hg19 : mutations_hg18
+    else
+        mutations[code] = []
+        Organism.chromosomes(code).list.each do |chromosome|
+            mutations[code] << [chromosomes, "20000", ":T"]
+        end
+    end
+end
 
 jobs = []
 mutations.keys.each do |organism|
