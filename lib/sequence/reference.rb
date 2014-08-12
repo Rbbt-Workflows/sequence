@@ -68,7 +68,38 @@ module Sequence
   end
   export_synchronous :gene_strand_reference
 
-  dep do |jobname,options|
+  dep :exons do |jobname,options|
+    Sequence.job(:exons, jobname, options.merge(:positions => options[:mutations]))
+  end
+  input *MUTATIONS_INPUT
+  task :to_watson => :array do |mutations|
+    organism = step(:exons).inputs["organism"]
+    exon_position = Sequence.exon_position(organism)
+    pasted = TSV.paste_streams([mutations, step(:exons)], :sort => false)
+    count = 0
+    TSV.traverse pasted, :bar => "To watson", :type => :array, :into => :stream do |line|
+      next if line =~ /#/
+      count += 1
+      mutation, *exons = line.split("\t")
+      ex = exons.reject{|e| e.empty?}
+
+      if ex.empty?
+        mutation
+      else
+        ex_strands = ex.collect{|e| exon_position[e] and exon_position[e][0] }.compact
+        if ex_strands.select{|s| s == -1}.any? and ex_strands.select{|s| s == 1}.empty?
+          mutation
+        else
+          chr,pos,allele, *rest = mutation.split(":")
+          allele = allele.split("").each{|base| Misc::BASE2COMPLEMENT[base] || base} * ""
+          ([chr,pos,allele] + rest) * ":"
+        end
+      end
+    end
+  end
+  export_synchronous :to_watson
+
+  dep :gene_strand_reference do |jobname,options|
     Sequence.job(:gene_strand_reference, jobname, options.merge(:positions => options[:mutations]))
   end
   input *MUTATIONS_INPUT
