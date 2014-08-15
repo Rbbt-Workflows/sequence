@@ -42,10 +42,8 @@ mutations.keys.each do |organism|
   jobs << job
 end
 
-jobs.each do |job|
-  job.run(true).grace
+procs = ARGV.shift 
+require 'rbbt/util/semaphore'
+Misc.bootstrap(jobs, procs) do |job|
+  job.run
 end
-
-Step.wait_for_jobs(jobs)
-
-
