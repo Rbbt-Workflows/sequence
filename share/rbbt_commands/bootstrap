@@ -47,3 +47,11 @@ require 'rbbt/util/semaphore'
 Misc.bootstrap(jobs, procs) do |job|
   job.run
 end
+
+Organism.organism_codes.each do |code|
+  Organism.protein_sequence(code).produce
+  Organism.transcript_sequence(code).produce
+  Organism.protein_identifiers(code).produce
+  Organism.transcripts(code).produce
+  Organism.exons(code).produce
+end
