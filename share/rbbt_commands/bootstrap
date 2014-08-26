@@ -49,9 +49,11 @@ Misc.bootstrap(jobs, procs) do |job|
 end
 
 Organism.organism_codes.each do |code|
-  Organism.protein_sequence(code).produce
-  Organism.transcript_sequence(code).produce
-  Organism.protein_identifiers(code).produce
-  Organism.transcripts(code).produce
   Organism.exons(code).produce
+  Organism.transcripts(code).produce
+  Organism.transcript_sequence(code).produce
+  Organism.protein_sequence(code).produce
+  Organism.protein_identifiers(code).produce
+  Organism.lexicon(code).produce
+  Organism.gene_pmids(code).produce
 end

@@ -44,9 +44,7 @@ module Sequence
 
     new = tsv.R "
       data = cbind(data,p.value=apply(data, 1, function(v){v = as.numeric(v); binom.test(v[1], v[2], #{ global_frequency }, 'greater')$p.value}))
-      data
     ", :key => "Ensembl Gene ID" 
-
 
     new.namespace = organism
     new
