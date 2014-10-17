@@ -11,7 +11,7 @@ options = SOPT.get('-m--method*:-p--plot*')
 
 file, *sizes = ARGV
 
-plot = options[:plot] || 'plot.png'
+plot = options[:plot] || 'plot.svg'
 options[:method] = options[:method].split(",") if options[:method]
 log = Log.severity
 
@@ -23,12 +23,13 @@ times = {
   "Sequence_fast" => [], 
   "Sequence_fast_no_MP" => [], 
 }
+organism = Organism.default_code("Hsa")
 
 sizes.each do |size|
   size = size.to_i
 
   text = ""
-  text = Open.read(file).split("\n").reject{|l| l =~ /^M:/}[1..size] * "\n"
+  text = Open.read(file).split("\n").reject{|l| l =~ /^M:/}[1..size].sort * "\n"
 
   TmpFile.with_file(text) do |tmpfile|
     Path.setup(tmpfile)
@@ -47,7 +48,7 @@ sizes.each do |size|
     if options[:method].nil? or options[:method].include? "Sequence_nostream"
       Log.info "Sequence_nostream" + " " +  size.to_s
       ENV["RBBT_NO_STREAM"] = "true"
-      job = Sequence.job(:mutated_isoforms, jobname + ".no_stream", :mutations => tmpfile).recursive_clean
+      job = Sequence.job(:mutated_isoforms, jobname + ".no_stream", :mutations => tmpfile, :organism => organism).recursive_clean
       start = Time.now
       job.fork.join
       ENV["RBBT_NO_STREAM"] = nil
@@ -59,7 +60,7 @@ sizes.each do |size|
     if options[:method].nil? or options[:method].include? "Sequence"
       Open.open(tmpfile) do |f|
         Log.info "Sequence" + " " +  size.to_s
-        job = Sequence.job(:mutated_isoforms, jobname + ".steps", :mutations => f).recursive_clean
+        job = Sequence.job(:mutated_isoforms, jobname + ".steps", :mutations => f, :organism => organism).recursive_clean
         job.fork.join
         time = job.info[:time_elapsed]
         times["Sequence"] << time
@@ -70,7 +71,7 @@ sizes.each do |size|
     if options[:method].nil? or options[:method].include? "Sequence_exec"
       Open.open(tmpfile) do |f|
         Log.info "Sequence_exec" + " " +  size.to_s
-        job = Sequence.job(:mutated_isoforms, jobname + ".exec", :mutations => f).recursive_clean
+        job = Sequence.job(:mutated_isoforms, jobname + ".exec", :mutations => f, :organism => organism).recursive_clean
         start = Time.now
         res = job.exec(true)
         res.read
@@ -84,8 +85,8 @@ sizes.each do |size|
       Open.open(tmpfile) do |f|
         Log.info "Sequence_fast_no_MP" + " " +  size.to_s
         ENV["RBBT_NO_MAP_REDUCE"] = "true"
-        job = Sequence.job(:mutated_isoforms_fast, jobname + ".no_mp", :mutations => f).recursive_clean
-        job.fork.join
+        job = Sequence.job(:mutated_isoforms_fast, jobname + ".no_mp", :mutations => f, :organism => organism).recursive_clean
+        job.run
         ENV["RBBT_NO_MAP_REDUCE"] = nil
         time = job.info[:time_elapsed]
         times["Sequence_fast_no_MP"] << time
@@ -96,8 +97,8 @@ sizes.each do |size|
     if options[:method].nil? or options[:method].include? "Sequence_fast"
       Open.open(tmpfile) do |f|
         Log.info "Sequence_fast" + " " +  size.to_s
-        job = Sequence.job(:mutated_isoforms_fast, jobname + ".fast", :mutations => f).recursive_clean
-        job.fork.join
+        job = Sequence.job(:mutated_isoforms_fast, jobname + ".fast", :mutations => f, :organism => organism).recursive_clean
+        job.run
         time = job.info[:time_elapsed]
         times["Sequence_fast"] << time
         Log.info Log.color(:red, "Sequence_fast") + " " + Log.color(:blue, size.to_s) + " " + Log.color(:yellow, time.to_i)

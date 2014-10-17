@@ -9,7 +9,7 @@ module Sequence
 
   class TranscriptError < StandardError; end
 
-  ORGANISM_INPUT = [:organism, :string, "Organism code", "Hsa"]
+  ORGANISM_INPUT = [:organism, :string, "Organism code", Organism.default_code("Hsa")]
   MUTATIONS_INPUT = [:mutations, :array, "Mutations Chr:Position:Allele (e.g. 19:54646887:T). Extra fields are ignored but kept", nil, :stream => true]
   POSITIONS_INPUT = [:positions, :array, "Positions Chr:Position (e.g. 19:54646887). Extra fields are ignored but kept", nil, :stream => true]
   RANGES_INPUT = [:ranges, :array, "Ranges Chr:Start:End (e.g. 19:54646887:54647887)", nil, :stream => true]
