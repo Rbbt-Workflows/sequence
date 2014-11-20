@@ -16,31 +16,31 @@ module Sequence
   
   def self.gene_chromosome_index(organism, chromosome)
     Persist.memory("gene_chromosome_index", :key => [organism,chromosome]*":", :repo => CACHE) do
-      TSV.range_index(Organism.gene_positions(organism).produce, "Gene Start", "Gene End", :filters => [["field:Chromosome Name", chromosome]], :persist => true, :data_persist => true, :unnamed => true)
+      TSV.range_index(Organism.gene_positions(organism).produce, "Gene Start", "Gene End", :filters => [["field:Chromosome Name", chromosome]], :persist => true, :data_persist => true, :unnamed => true, :merge => true)
     end
   end
 
   def self.exon_chromosome_index(organism, chromosome)
     Persist.memory("exon_chromosome_index", :key =>  [organism,chromosome]*":", :repo => CACHE) do
-      TSV.range_index(Organism.exons(organism).produce, "Exon Chr Start", "Exon Chr End", :filters => [["field:Chromosome Name", chromosome]], :persist => true, :data_persist => true, :unnamed => true)
+      TSV.range_index(Organism.exons(organism).produce, "Exon Chr Start", "Exon Chr End", :filters => [["field:Chromosome Name", chromosome]], :persist => true, :data_persist => true, :unnamed => true, :merge => true)
     end
   end
 
   def self.transcript_chromosome_index(organism, chromosome)
     Persist.memory("exon_chromosome_index", :key => [organism,chromosome]*":", :repo => CACHE) do
-      TSV.range_index(Organism.transcripts(organism).produce, "Transcript Start (bp)", "Transcript End (bp)", :filters => [["field:Chromosome Name", chromosome]], :persist => true, :data_persist => true, :unnamed => true)
+      TSV.range_index(Organism.transcripts(organism).produce, "Transcript Start (bp)", "Transcript End (bp)", :filters => [["field:Chromosome Name", chromosome]], :persist => true, :data_persist => true, :unnamed => true, :merge => true)
     end
   end
 
   def self.exon_start_index(organism, chromosome)
     Persist.memory("exon_start_index", :key => [organism,chromosome]*":", :repo => CACHE) do
-      TSV.pos_index(Organism.exons(organism).produce, "Exon Chr Start", :filters => [["field:Chromosome Name", chromosome]], :persist => true, :data_persist => true, :unnamed => true)
+      TSV.pos_index(Organism.exons(organism).produce, "Exon Chr Start", :filters => [["field:Chromosome Name", chromosome]], :persist => true, :data_persist => true, :unnamed => true, :merge => true)
     end
   end
 
   def self.exon_end_index(organism, chromosome)
     Persist.memory("exon_end_index", :key => [organism,chromosome]*":", :repo => CACHE) do
-      TSV.pos_index(Organism.exons(organism).produce, "Exon Chr Start", :filters => [["field:Chromosome Name", chromosome]], :persist => true, :data_persist => true, :unnamed => true)
+      TSV.pos_index(Organism.exons(organism).produce, "Exon Chr Start", :filters => [["field:Chromosome Name", chromosome]], :persist => true, :data_persist => true, :unnamed => true, :merge => true)
     end
   end
 
@@ -48,10 +48,11 @@ module Sequence
     key = [organism, chromosome]
     CACHE[:exon_end] ||= {}
     if CACHE[:exon_end][key].nil?
-      CACHE[:exon_end][key] = TSV.pos_index(Organism.exons(organism).produce, "Exon Chr End", :filters => [["field:Chromosome Name", chromosome]], :persist => true, :data_persist => true, :unnamed => true)
+      CACHE[:exon_end][key] = TSV.pos_index(Organism.exons(organism).produce, "Exon Chr End", :filters => [["field:Chromosome Name", chromosome]], :persist => true, :data_persist => true, :unnamed => true, :merge => true)
     end
     CACHE[:exon_end][key]
   end
+
   def self.exon_position(organism)
     Persist.memory("exon_position", :key => organism, :repo => CACHE) do
       Organism.exons(organism).tsv :persist => true, :fields => ["Exon Strand", "Exon Chr Start", "Exon Chr End"], :cast => :to_i, :unnamed => true
@@ -66,7 +67,7 @@ module Sequence
 
   def self.exon_transcripts(organism)
     Persist.memory("exon_transcripts", :key => organism, :repo => CACHE) do
-      Organism.transcript_exons(organism).tsv(:key_field => "Ensembl Exon ID", :fields => ["Ensembl Transcript ID"], :type => :flat, :persist => true, :unnamed => true)
+      Organism.transcript_exons(organism).tsv(:key_field => "Ensembl Exon ID", :fields => ["Ensembl Transcript ID"], :type => :flat, :persist => true, :unnamed => true, :merge => true)
     end
   end
 
@@ -74,7 +75,7 @@ module Sequence
 
   def self.transcript_exons(organism)
     Persist.memory("transcript_exons", :key => organism, :repo => CACHE) do
-      Organism.transcript_exons(organism).tsv(:persist => true, :unnamed => true)
+      Organism.transcript_exons(organism).tsv(:persist => true, :unnamed => true, :merge => true)
     end
   end
 
@@ -106,7 +107,7 @@ module Sequence
 
   def self.transcript_protein(organism)
     Persist.memory("transcript_protein", :key => organism, :repo => CACHE) do
-       Organism.transcripts(organism).tsv(:persist => true, :fields => ["Ensembl Protein ID"], :type => :single, :unnamed => true)
+       Organism.transcripts(organism).tsv(:persist => true, :fields => ["Ensembl Protein ID"], :type => :single, :unnamed => true, :merge => true)
     end
   end
 
