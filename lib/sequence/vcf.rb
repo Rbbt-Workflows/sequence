@@ -147,11 +147,16 @@ module Sequence
       end
 
       info_fields = header["INFO"].keys if header.include? "INFO"
+      info_fields ||= []
       format_fields = header["FORMAT"].keys if header.include? "FORMAT"
+      format_fields ||= line.split("\t")[8].split(":") if line.split("\t")[8]
 
       info_pos = fields.index("INFO") unless no_info
       format_pos = fields.index("FORMAT") unless no_format
       sample_fields = format_pos ? fields[format_pos+1..-1] : []
+      if sample_fields.length > 1 and sample_fields.select{|s| s =~ /[_-]T$/}.any?
+        sample_fields = sample_fields.collect{|s| s.sub(/[_-]T$/, '')}
+      end
 
       stream_fields = ["Original", "RS ID", "Quality", "Filter"]
       stream_fields.concat sample_fields.collect{|s| format_fields.collect{|f| [s,f] * ":" }}.flatten if format_pos
