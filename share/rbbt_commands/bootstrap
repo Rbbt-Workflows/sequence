@@ -21,6 +21,16 @@ Organism.organism_codes.each do |code|
     end
 end
 
+Organism.organism_codes.each do |code|
+  Organism.exons(code).produce
+  Organism.transcripts(code).produce
+  Organism.transcript_sequence(code).produce
+  Organism.protein_sequence(code).produce
+  Organism.protein_identifiers(code).produce
+  Organism.lexicon(code).produce
+  Organism.gene_pmids(code).produce
+end
+
 jobs = []
 mutations.keys.each do |organism|
 
@@ -30,7 +40,7 @@ mutations.keys.each do |organism|
   jobs << job
 
   params = { :mutations => mutations[organism].dup, :organism => organism, :watson => false }
-  job = Sequence.job(:affected_genes, "BOOTSTRAP-#{organism}", params)
+  job = Sequence.job(:mutated_isoforms_fast, "BOOTSTRAP-#{organism}", params)
   jobs << job
 
   params = { :positions => mutations[organism].dup, :organism => organism}
@@ -45,15 +55,6 @@ end
 procs = ARGV.shift 
 require 'rbbt/util/semaphore'
 Misc.bootstrap(jobs, procs) do |job|
-  job.run
+  job.recursive_clean.run
 end
 
-Organism.organism_codes.each do |code|
-  Organism.exons(code).produce
-  Organism.transcripts(code).produce
-  Organism.transcript_sequence(code).produce
-  Organism.protein_sequence(code).produce
-  Organism.protein_identifiers(code).produce
-  Organism.lexicon(code).produce
-  Organism.gene_pmids(code).produce
-end
