@@ -3,7 +3,10 @@ require 'rbbt/util/R'
 module Sequence
 
   dep :affected_genes
-  task :binomial_significance => :tsv do 
+  input *MUTATIONS_INPUT
+  task :binomial_significance => :tsv do |mutations|
+    mutation_count = Array === mutations ? Misc.counts(mutations.collect{|m| m.split(":").values_at(0,1)*":"}) : Misc.counts(Open.read(mutations).split("\n").collect{|m| m.split(":").values_at(0,1)*":"})
+    iif mutation_count
     genes_step = step(:affected_genes)
     organism = genes_step.step(:mutated_isoforms_fast).inputs[1]
 
@@ -24,7 +27,9 @@ module Sequence
     end
 
     genes = genes.to_a
-    num_mutations = mutations.to_a.length
+
+    #num_mutations = mutations.to_a.length
+    num_mutations = mutation_count.values.inject(0){|acc,e| acc += e; acc}
 
     total_bases = Organism.gene_list_exon_bases(genes)
     global_frequency = num_mutations.to_f / total_bases
@@ -34,7 +39,7 @@ module Sequence
     TSV.traverse genes, :bar => "Computing significance" do |gene|
       mutations = gene_mutations[gene].uniq
       next if mutations.empty?
-      matches = mutations.length
+      matches = mutations.collect{|mutation| mutation_count[mutation]}.inject(0){|acc,e| acc += e}
       exon_bases = gene2exon_size[gene]
       next if exon_bases == 0
       frequency = matches.to_f / exon_bases
