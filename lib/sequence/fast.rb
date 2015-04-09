@@ -13,7 +13,7 @@ module Sequence
       mutations = step(:genomic_mutations)
     end
 
-    raise ParameterException, "No mutations specified" if mutations.nil?
+    raise ParameterException, "No mutations specified: #{path}" if mutations.nil?
 
     transcript_protein = Sequence.transcript_protein(organism)
     exon_position = Sequence.exon_position(organism)
