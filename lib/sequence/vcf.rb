@@ -241,4 +241,40 @@ module Sequence
       mutation
     end
   end
+
+  dep do |name, options|
+    options = Misc.add_defaults options, :info => true, :format => true, :preamble => false
+    Sequence.job(:expanded_vcf, name, options)
+  end
+  input :vcf_file, :text, "VCF file", nil, :stream => true
+  input :quality, :float, "Quality threshold", nil
+  task :cnvs => :array do |vcf_file,quality|
+    expanded_vcf = step(:expanded_vcf).join
+    Misc.consume_stream vcf_file, true 
+
+    fields = TSV.parse_header(expanded_vcf.path).fields
+    tumor_tcn = fields.select{|f| f =~ /TUMOUR:TCN/i }.first
+    tumor_tcn ||= fields.select{|f| f =~ /_T:TCN/i }.first
+    tumor_mcn = fields.select{|f| f =~ /TUMOUR:MCN/i }.first
+    tumor_mcn ||= fields.select{|f| f =~ /_T:MCN/i }.first
+
+    fields = fields - [tumor_tcn, tumor_mcn]
+
+    normal_tcn = fields.select{|f| f =~ /:TCN/i}.first
+    normal_mcn = fields.select{|f| f =~ /:MCN/i}.first
+
+    select_fields = ["END", normal_tcn, normal_mcn, tumor_tcn, tumor_mcn]
+    TSV.traverse expanded_vcf.path.tsv(:fields => select_fields, :unnamed => true), :bar => "CNVs from VCF", :type => :list, :into => :stream do |mutation,values|
+      begin
+        eend, ntcn, nmcn, ttcn, tmcn = values
+        chr, start, _rest = mutation.split(":")
+        next if [ntcn, nmcn] == [ttcn, tmcn]
+        tumor_cnv = [chr, start, eend, [ttcn, tmcn]*"-",[ntcn, nmcn]*"-"] * ":"
+        tumor_cnv
+      rescue
+        Log.exception $!
+        next
+      end
+    end
+  end
 end
