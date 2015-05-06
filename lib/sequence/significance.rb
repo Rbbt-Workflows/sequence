@@ -5,6 +5,7 @@ module Sequence
   dep :affected_genes
   input *MUTATIONS_INPUT
   task :binomial_significance => :tsv do |mutations|
+    mutations = mutations.join.load if Step === mutations
     mutation_count = Array === mutations ? Misc.counts(mutations.collect{|m| m.split(":").values_at(0,1)*":"}) : Misc.counts(Open.read(mutations).split("\n").collect{|m| m.split(":").values_at(0,1)*":"})
     iif mutation_count
     genes_step = step(:affected_genes)

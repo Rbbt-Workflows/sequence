@@ -44,14 +44,14 @@ module Sequence
     end
   end
 
-  def self.exon_end_index(organism, chromosome)
-    key = [organism, chromosome]
-    CACHE[:exon_end] ||= {}
-    if CACHE[:exon_end][key].nil?
-      CACHE[:exon_end][key] = TSV.pos_index(Organism.exons(organism).produce, "Exon Chr End", :filters => [["field:Chromosome Name", chromosome]], :persist => true, :data_persist => true, :unnamed => true, :merge => true)
-    end
-    CACHE[:exon_end][key]
-  end
+  #def self.exon_end_index(organism, chromosome)
+  #  key = [organism, chromosome]
+  #  CACHE[:exon_end] ||= {}
+  #  if CACHE[:exon_end][key].nil?
+  #    CACHE[:exon_end][key] = TSV.pos_index(Organism.exons(organism).produce, "Exon Chr End", :filters => [["field:Chromosome Name", chromosome]], :persist => true, :data_persist => true, :unnamed => true, :merge => true)
+  #  end
+  #  CACHE[:exon_end][key]
+  #end
 
   def self.exon_position(organism)
     Persist.memory("exon_position", :key => organism, :repo => CACHE) do
@@ -68,6 +68,24 @@ module Sequence
   def self.exon_transcripts(organism)
     Persist.memory("exon_transcripts", :key => organism, :repo => CACHE) do
       Organism.transcript_exons(organism).tsv(:key_field => "Ensembl Exon ID", :fields => ["Ensembl Transcript ID"], :type => :flat, :persist => true, :unnamed => true, :merge => true)
+    end
+  end
+
+  def self.gene_start_index(organism, chromosome)
+    Persist.memory("gene_start_index", :key => [organism,chromosome]*":", :repo => CACHE) do
+      TSV.pos_index(Organism.gene_positions(organism).produce, "Gene Start", :filters => [["field:Chromosome Name", chromosome]], :persist => true, :data_persist => true, :unnamed => true, :merge => true)
+    end
+  end
+
+  def self.gene_end_index(organism, chromosome)
+    Persist.memory("gene_end_index", :key => [organism,chromosome]*":", :repo => CACHE) do
+      TSV.pos_index(Organism.gene_positions(organism).produce, "Gene End", :filters => [["field:Chromosome Name", chromosome]], :persist => true, :data_persist => true, :unnamed => true, :merge => true)
+    end
+  end
+
+  def self.gene_position(organism)
+    Persist.memory("gene_position", :key => organism, :repo => CACHE) do
+      Organism.gene_positions(organism).tsv :persist => true, :fields => ["Strand", "Gene Start", "Gene End"], :cast => :to_i, :unnamed => true, :type => :list
     end
   end
 

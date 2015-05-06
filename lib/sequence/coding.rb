@@ -244,9 +244,9 @@ module Sequence
   task :splicing_mutations => :tsv do |_pos|
     Misc.consume_stream _pos, true
     type = step(:type)
-    exon_junctions = step(:exon_junctions)
+    exon_junctions = step(:exon_junctions).grace
 
-    organism = exon_junctions.info[:inputs][:organism]
+    organism = exon_junctions.inputs[:organism]
     transcript_exons = Sequence.transcript_exons(organism)
     exon_transcripts = Sequence.exon_transcripts(organism)
 
