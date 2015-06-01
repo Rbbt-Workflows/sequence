@@ -5,6 +5,7 @@ module Sequence
   input *MUTATIONS_INPUT
   input *ORGANISM_INPUT
   input :exome, :boolean, "Limit analysis to exome bases", true
+  input :num_samples, :integer, "Number of samples considered", 1
   dep do |jobname,options|
     if options[:exome]
       Sequence.job(:affected_genes, jobname, :organism => options[:organism], :mutations => options[:mutations])
@@ -12,7 +13,7 @@ module Sequence
       Sequence.job(:genes, jobname, :organism => options[:organism], :positions => options[:mutations])
     end
   end
-  task :binomial_significance => :tsv do |mutations, organism, exome|
+  task :binomial_significance => :tsv do |mutations, organism, exome, num_samples|
     if Step === mutations
       Step.wait_for_jobs dependencies + [mutations]
     else
@@ -57,19 +58,20 @@ module Sequence
 
     num_mutations = position_counts.values.inject(0){|acc,e| acc += e; acc}
 
+    log :computing_sizes
     if exome
-      total_bases = Organism.gene_list_exon_bases(genes)
+      total_bases = Organism.gene_list_exon_bases(genes) * num_samples
       global_frequency = num_mutations.to_f / total_bases
 
-      gene2size = Misc.process_to_hash(genes){|genes| genes.collect{|gene| Organism.gene_list_exon_bases([gene]) }}
+      gene2size = Misc.process_to_hash(genes){|genes| genes.collect{|gene| Organism.gene_list_exon_bases([gene]) * num_samples }}
     else
-      total_bases = Organism.gene_list_bases(genes)
+      total_bases = Organism.gene_list_bases(genes) * num_samples
       global_frequency = num_mutations.to_f / total_bases
 
-      gene2size = Misc.process_to_hash(genes){|genes| genes.collect{|gene| Organism.gene_list_bases([gene]) }}
+      gene2size = Misc.process_to_hash(genes){|genes| genes.collect{|gene| Organism.gene_list_bases([gene]) * num_samples }}
     end
 
-    TSV.traverse genes, :bar => "Computing significance" do |gene|
+    TSV.traverse genes, :bar => "Computing significance", :type => :array do |gene|
       positions = gene_positions[gene].uniq
       next if positions.empty?
       matches = positions.collect{|position| position_counts[position]}.inject(0){|acc,e| acc += e}
@@ -78,6 +80,10 @@ module Sequence
       bases = gene2size[gene]
       next if bases == 0
       frequency = matches.to_f / bases
+      if matches >= bases
+        log :skip, "Gene #{ gene } has more matches than mutations. Skipping. Are you sure these mutations come from #{num_samples} samples?"
+        next
+      end
 
       tsv[gene] = [matches, bases, frequency]
     end
@@ -89,6 +95,7 @@ module Sequence
       new.namespace = organism
       new
     rescue Exception
+      Log.exception $!
       tsv.annotate({}).add_field "p.value" do
       end
     end
