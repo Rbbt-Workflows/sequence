@@ -117,7 +117,11 @@ module Sequence
 
   dep :exons
   task :transcript_offsets => :tsv do
-    mutations = step(:genomic_mutations) if step(:genomic_mutations)
+    begin
+      step(:genomic_mutations)
+      mutations = step(:genomic_mutations)
+    rescue
+    end
     organism = step(:exons).inputs[1]
 
     exon_position = Sequence.exon_position(organism)
@@ -243,7 +247,6 @@ module Sequence
   input *VCF_INPUT
   task :splicing_mutations => :tsv do |_pos|
     Misc.consume_stream _pos, true
-    type = step(:type)
     exon_junctions = step(:exon_junctions).grace
 
     organism = exon_junctions.inputs[:organism]

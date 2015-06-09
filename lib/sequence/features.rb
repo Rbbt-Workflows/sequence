@@ -5,9 +5,11 @@ module Sequence
   input *VCF_INPUT
   dep &VCF_CONVERTER
   task :genes => :tsv do |positions,organism|
-    if step(:genomic_mutations)
+    begin 
+      step(:genomic_mutations)
       Misc.consume_stream positions, true
       positions = step(:genomic_mutations)
+    rescue
     end
     raise ParameterException, "No 'positions' specified" if positions.nil?
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Ensembl Gene ID"], :type => :flat, :namespace => organism
@@ -29,9 +31,11 @@ module Sequence
   input *VCF_INPUT
   dep &VCF_CONVERTER
   task :exons => :tsv do |positions,organism|
-    if step(:genomic_mutations)
+    begin
+      step(:genomic_mutations)
       Misc.consume_stream positions, true
       positions = step(:genomic_mutations)
+    rescue
     end
     raise ParameterException, "No 'positions' specified" if positions.nil?
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Ensembl Exon ID"], :type => :flat, :namespace => organism
@@ -55,9 +59,11 @@ module Sequence
   input *VCF_INPUT
   dep &VCF_CONVERTER
   task :transcripts => :tsv do |positions,organism|
-    if step(:genomic_mutations)
+    begin
+      step(:genomic_mutations)
       Misc.consume_stream positions, true
       positions = step(:genomic_mutations)
+    rescue
     end
     raise ParameterException, "No 'positions' specified" if positions.nil?
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Ensembl Transcript ID"], :type => :flat, :namespace => organism
@@ -79,10 +85,13 @@ module Sequence
   input *VCF_INPUT
   dep &VCF_CONVERTER
   task :exon_junctions => :tsv do |positions,organism|
-    if step(:genomic_mutations)
+    begin
+      step(:genomic_mutations)
       Misc.consume_stream positions, true
       positions = step(:genomic_mutations)
+    rescue
     end
+
     raise ParameterException, "No 'positions' specified" if positions.nil?
 
     exon_position = Sequence.exon_position(organism)

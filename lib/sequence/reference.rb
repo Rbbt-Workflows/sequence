@@ -5,9 +5,11 @@ module Sequence
   input *VCF_INPUT
   dep &VCF_CONVERTER
   task :reference => :tsv do |positions,organism,vcf|
-    if step(:genomic_mutations)
+    begin
+      step(:genomic_mutations)
       Misc.consume_stream positions, true
       positions = step(:genomic_mutations) 
+    rescue
     end
 
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Reference Allele"], :type => :single, :namespace => organism

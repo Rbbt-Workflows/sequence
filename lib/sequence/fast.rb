@@ -8,9 +8,11 @@ module Sequence
   input *NS_INPUT
   dep &VCF_CONVERTER
   task :mutated_isoforms_fast => :tsv do |mutations,organism,watson,vcf,principal,ns|
-    if step(:genomic_mutations)
+    begin
+      step(:genomic_mutations)
       Misc.consume_stream mutations, true
       mutations = step(:genomic_mutations)
+    rescue
     end
 
     raise ParameterException, "No mutations specified: #{path}" if mutations.nil?
