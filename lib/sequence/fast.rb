@@ -43,9 +43,9 @@ module Sequence
         strand, start, eend = exon_position[exon]
         if strand == 1
           offset = pos - start
-      else
-        offset = eend - pos
-      end
+        else
+          offset = eend - pos
+        end
         Misc.zip_fields(exon_transcript_offsets[exon]).each do |transcript, exon_offset|
           offsets << [transcript, exon_offset.to_i + offset, strand] * ":"
         end if exon_transcript_offsets.include? exon
