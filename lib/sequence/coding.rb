@@ -43,11 +43,11 @@ module Sequence
     raise "Sequence for transcript was missing: #{ transcript }" if sequence.nil? 
 
     ccds_offset = offset - utr5
-    utr3 = transcript_3utr[transcript].to_i
+    utr3 = transcript_3utr[transcript]
     utr3 = utr3.to_i
 
     # TODO: Check this is ok!
-    return "UTR3" if ccds_offset > (sequence.length - utr3 - utr5)
+    return "UTR3" if ccds_offset >= (sequence.length - utr3 - utr5)
 
     if utr5 >= 0
       range = (utr5..-1)
