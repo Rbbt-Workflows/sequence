@@ -31,7 +31,7 @@ module Sequence
 
     def self.parse_info_fields(info_fields, info)
       values = {}
-      info.split(";").each{|p| k,v = p.split("="); v ||= true; values[k] = v}
+      info.split(";").each{|p| k, _sep, v = p.strip.partition("="); v ||= "true"; values[k.strip] = v.strip}
       info_fields.collect{|f| values[f] }
     end
 
@@ -176,7 +176,7 @@ module Sequence
 
             line_values = []
 
-            chr, position, id, ref, alt, qual, filter, *rest = parts = line.split(/\s+/)
+            chr, position, id, ref, alt, qual, filter, *rest = parts = line.split(/\t/,-1)
             orig = [chr,position,ref,alt] * ":"
 
             chr.sub! 'chr', ''
