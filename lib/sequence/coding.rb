@@ -31,8 +31,12 @@ module Sequence
       phase = transcript_phase[transcript]
       raise TranscriptError, "No UTR5 and no phase for transcript: #{ transcript }" if phase.nil?
       phase = phase.to_i
-      raise TranscriptError, "No UTR5 but phase is -1: #{ transcript }" if phase == -1
-      utr5 = - phase
+      if phase == -1
+        Log.debug "No UTR5 but phase is -1: #{ transcript }" 
+        utr5 = 0
+      else
+        utr5 = - phase
+      end
     else
       utr5 = utr5.to_i
     end
