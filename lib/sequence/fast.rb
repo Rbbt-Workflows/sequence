@@ -74,7 +74,7 @@ module Sequence
             else # Protein mutation
               triplet, offset, pos = codon.split ":"
               next if not triplet.length == 3
-              original = Misc::CODON_TABLE[triplet]
+              original = Misc::CODON_TABLE[triplet] || 'X'
               next if alleles.empty?
               pos = pos.to_i
               alleles.each do |allele|
@@ -86,7 +86,7 @@ module Sequence
                          else
                            allele = Misc::BASE2COMPLEMENT[allele] if watson and strand == "-1"
                            triplet[offset.to_i] = allele 
-                           new = Misc::CODON_TABLE[triplet]
+                           new = Misc::CODON_TABLE[triplet] || 'X'
                            [original, pos + 1, new] * ""
                          end
                 mis << [protein, change] * ":"
