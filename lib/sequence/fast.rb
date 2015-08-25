@@ -62,7 +62,6 @@ module Sequence
           next if principal and not Appris::PRINCIPAL_TRANSCRIPTS.include?(transcript)
           protein = transcript_protein[transcript]
           next if protein.nil? or protein.empty?
-          iii [transcript, transcript_offset, strand, protein]
 
           begin
             codon = Sequence.codon_at_transcript_position(organism, transcript, transcript_offset.to_i);
