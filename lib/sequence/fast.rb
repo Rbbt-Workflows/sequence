@@ -62,6 +62,7 @@ module Sequence
           next if principal and not Appris::PRINCIPAL_TRANSCRIPTS.include?(transcript)
           protein = transcript_protein[transcript]
           next if protein.nil? or protein.empty?
+          iii [transcript, transcript_offset, strand, protein]
 
           begin
             codon = Sequence.codon_at_transcript_position(organism, transcript, transcript_offset.to_i);
@@ -73,23 +74,27 @@ module Sequence
 
             else # Protein mutation
               triplet, offset, pos = codon.split ":"
-              next if not triplet.length == 3
-              original = Misc::CODON_TABLE[triplet] || 'X'
-              next if alleles.empty?
-              pos = pos.to_i
-              alleles.each do |allele|
-                change = case allele
-                         when "Indel"
-                           [original, pos + 1, "Indel"] * ""
-                         when "FrameShift"
-                           [original, pos + 1, "FrameShift"] * ""
-                         else
-                           allele = Misc::BASE2COMPLEMENT[allele] if watson and strand == "-1"
-                           triplet[offset.to_i] = allele 
-                           new = Misc::CODON_TABLE[triplet] || 'X'
-                           [original, pos + 1, new] * ""
-                         end
+              if triplet.length < 3
+                change = ["X",pos.to_i+1,"X"]*""
                 mis << [protein, change] * ":"
+              else
+                original = Misc::CODON_TABLE[triplet] || 'X'
+                next if alleles.empty?
+                pos = pos.to_i
+                alleles.each do |allele|
+                  change = case allele
+                          when "Indel"
+                            [original, pos + 1, "Indel"] * ""
+                          when "FrameShift"
+                            [original, pos + 1, "FrameShift"] * ""
+                          else
+                            allele = Misc::BASE2COMPLEMENT[allele] if watson and strand == "-1"
+                            triplet[offset.to_i] = allele 
+                            new = Misc::CODON_TABLE[triplet] || 'X'
+                            [original, pos + 1, new] * ""
+                          end
+                  mis << [protein, change] * ":"
+                end
               end
             end
           rescue TranscriptError
