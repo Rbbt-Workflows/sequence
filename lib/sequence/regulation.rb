@@ -37,9 +37,9 @@ module Sequence
         diff = pos - start
 
         case
-        when (strand == 1 and pos <= start)
+        when (strand == 1 and pos < start)
           overlaps << gene 
-        when (strand == -1 and pos >= eend)
+        when (strand == -1 and pos > eend)
           overlaps << gene
         end
       end
@@ -50,6 +50,55 @@ module Sequence
   end
   export_synchronous :TSS
 
+  input *POSITIONS_INPUT
+  input *ORGANISM_INPUT
+  input *VCF_INPUT
+  dep &VCF_CONVERTER
+  input :distance, :integer, "Distance to TSS", 1000
+  task :TES => :tsv do |positions,organism,vcf,distance|
+    begin
+      step(:genomic_mutations)
+      Misc.consume_stream positions, true
+      positions = step(:genomic_mutations)
+    rescue
+    end
+    raise ParameterException, "No 'positions' specified" if positions.nil?
+
+    gene_position = Sequence.gene_position(organism)
+    chromosome_files_start = {}
+    chromosome_files_end = {}
+
+    dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Ensembl Gene ID"], :type => :flat, :namespace => organism
+    dumper.init
+    TSV.traverse positions, :bar => "TES", :type => :array, :into => dumper do |position|
+      chromosome, pos = position.split ":"
+      next if pos.nil?
+      chromosome.sub!(/^chr/i,'')
+      pos = pos.to_i
+      overlaps = []
+      start_index = chromosome_files_start[chromosome] ||= Sequence.gene_start_index(organism, chromosome)
+      end_index = chromosome_files_end[chromosome] ||= Sequence.gene_end_index(organism, chromosome)
+
+      end_genes = end_index[pos-distance..pos + distance]
+
+      end_genes.each do |gene|
+        next unless gene_position.include? gene
+        strand, start, eend = gene_position[gene]
+        diff = pos - eend
+
+        case
+        when (strand == 1 and pos > eend)
+          overlaps << gene 
+        when (strand == -1 and pos < start)
+          overlaps << gene
+        end
+      end
+      next if overlaps.empty?
+
+      [position, overlaps.uniq]
+    end
+  end
+  export_synchronous :TSS
   input *RANGES_INPUT
   input *ORGANISM_INPUT
   input :distance, :integer, "Distance to TSS", 1000

@@ -1,0 +1,71 @@
+#!/usr/bin/env ruby
+
+require 'rbbt-util'
+require 'rbbt/util/simpleopt'
+
+$0 = "rbbt #{$previous_commands*""} #{ File.basename(__FILE__) }" if $previous_commands
+
+options = SOPT.setup <<EOF
+
+Compare two mutated_isoform result files
+
+$ #{ $0 } <filename1.tsv> <filename2.tsv>
+
+List the differences
+
+-h--help Print this help
+
+EOF
+if options[:help]
+  if defined? rbbt_usage
+    rbbt_usage 
+  else
+    puts SOPT.usage
+  end
+  exit 0
+end
+
+file1, file2 = ARGV
+
+Workflow.require_workflow "Appris"
+principal = Appris::PRINCIPAL_ISOFORMS
+
+TSV.traverse TSV.paste_streams([file1, file2], :fix_flat => true) do |mut,values|
+  mut = mut.first if Array === mut
+  allele = mut.split(":")[2]
+  next if allele.include? '-' or allele.length > 1
+  mi1, mi2 = values
+  common = mi1 & mi2
+  mi1 = mi1.reject{|mi| mi =~ /UTR|Frame|Indel/}
+  mi2 = mi2.reject{|mi| mi =~ /UTR|Frame|Indel/}
+  e1 = mi1 - mi2
+  e2 = mi2 - mi1
+
+  e1 = e1.collect do |mi|
+    protein = mi.partition(":").first
+    if principal.include? protein
+      mi + ' (principal)'
+    else
+      mi
+    end
+  end
+
+  e2 = e2.collect do |mi|
+    protein = mi.partition(":").first
+    if principal.include? protein
+      mi + ' (principal)'
+    else
+      mi
+    end
+  end
+
+  if e1.any? or e2.any?
+    str = "Difference in #{mut} - Common #{common.length}."
+    str << " missing in #{file1}: " << e2*", " if e2.any?
+    str << " missing in #{file2}: " << e1*", " if e1.any?
+    puts str
+  else
+    next
+  end
+end
+

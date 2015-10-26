@@ -15,7 +15,7 @@ module Sequence
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Ensembl Gene ID"], :type => :flat, :namespace => organism
     dumper.init
     chromosome_files = {}
-    TSV.traverse positions, :type => :array, :into => dumper do |position|
+    TSV.traverse positions, :type => :array, :into => dumper, :bar => "Overlapping genes" do |position|
       chr, pos = position.split(/[\s:\t]+/)
       next if pos.nil?
       chr.sub!(/^chr/i,'')

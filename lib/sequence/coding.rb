@@ -238,7 +238,7 @@ module Sequence
   export_synchronous :mutated_isoforms
 
 
-  dep do |jobname,options|
+  dep :exon_junctions do |jobname,options|
     options = options.dup
     IndiferentHash.setup options
     options.merge!(:positions => options[:mutations])

@@ -17,12 +17,17 @@ sequence=/$PWD filter="*.rb *.R *.js *.sass *.haml *.tsv" {
    regulation.rb
   }
  }
- share=share{
-  rbbt_commands=rbbt_commands filter="*"{
-   bootstrap
+ share=share filter="*"{
+  databases=databases{
+   sequence_ontology=sequence_ontology{
+    terms
+   }
+  }
+  rbbt_commands=rbbt_commands{
    benchmark
+   bootstrap
    cmp_res
-   maf2study
+   compare_mis
   }
  }
 }
