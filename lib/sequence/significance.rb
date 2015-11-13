@@ -74,7 +74,7 @@ module Sequence
     TSV.traverse genes, :bar => "Computing significance", :type => :array do |gene|
       positions = gene_positions[gene].uniq
       next if positions.empty?
-      matches = positions.collect{|position| position_counts[position]}.inject(0){|acc,e| acc += e}
+      matches = positions.collect{|position| position_counts[position]}.compact.inject(0){|acc,e| acc += e}
       next if matches < 2
 
       bases = gene2size[gene]
