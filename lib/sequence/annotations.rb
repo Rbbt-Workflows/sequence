@@ -257,7 +257,7 @@ module Sequence
     Workflow.require_workflow "InterPro"
     so_term_order = Rbbt.share.databases.sequence_ontology.terms.tsv :fields => ["Order"], :type => :single, :cast => :to_i
     organism = step(:mutated_isoforms_fast).inputs[:organism]
-    dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Mutated Isoform", "MI SO Terms", "MUT SO Terms" "SO Term"], :type => :double, :namespace => organism
+    dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Mutated Isoform", "MI SO Terms", "MUT SO Terms", "SO Term"], :type => :double, :namespace => organism
     dumper.init
     TSV.traverse TSV.paste_streams([step(:mutated_isoforms_fast), step(:exon_junctions), step(:genes), step(:exons), step(:TSS), step(:TES)], :fix_flat => true), 
       :into => dumper, :bar => "Sequence ontology" do |mut,values|
