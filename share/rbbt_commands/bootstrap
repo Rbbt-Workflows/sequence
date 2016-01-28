@@ -59,6 +59,6 @@ end
 
 require 'rbbt/util/semaphore'
 Misc.bootstrap(jobs, procs) do |job|
-  job.recursive_clean.run
+  job.produce
 end
 
