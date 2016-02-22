@@ -142,7 +142,7 @@ module Sequence
   def self.mut_sequence_ontology_term(mut, juncs, genes, exons, up_genes, down_genes, organism)
     miRNAs = []
     chr,pos,allele = mut.split(":")
-    @ense2enst ||= Organism.transcript_exons(organism).tsv :key_field => "Ensembl Exon ID", :fields => ["Ensembl Transcript ID"], :persist => true, :type => :single
+    @ense2enst ||= Organism.transcript_exons(organism).index :fields => ["Ensembl Exon ID"], :target => "Ensembl Transcript ID", :persist => true, :merge => true
     @enst2biotype ||= Organism.transcript_biotype(organism).tsv :persist => true, :type => :single
     transcripts = exons.collect{|e| @ense2enst[e]}.uniq
 
@@ -272,6 +272,7 @@ module Sequence
       [mut,[mis, mi_so_terms, mut_so_terms, [top_term]]]
     end
   end
+  export_asynchronous :sequence_ontology
 end
 
 
