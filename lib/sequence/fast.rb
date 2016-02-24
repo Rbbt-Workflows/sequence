@@ -55,7 +55,7 @@ module Sequence
       next if transcript_offsets.empty?
 
       mis = []
-      mut_str.split(',').each do |mut|
+      mut_str.split(/[,\/]/).each do |mut|
         alleles = Sequence.alleles mut
 
         transcript_offsets.collect{|to| to.split ":" }.each do |transcript, transcript_offset, strand|
