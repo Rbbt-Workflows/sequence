@@ -174,6 +174,8 @@ module Sequence
               next
             end
 
+            line.chomp!
+
             line_values = []
 
             chr, position, id, ref, alt, qual, filter, *rest = parts = line.split(/\t/,-1)
