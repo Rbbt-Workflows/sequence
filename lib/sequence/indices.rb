@@ -71,6 +71,13 @@ module Sequence
     end
   end
 
+  def self.transcript_biotype(organism)
+    Persist.memory("transcript_biotype", :key => organism, :repo => CACHE) do
+      Organism.transcript_biotype(organism).tsv(:type => :single, :persist => true, :unnamed => true)
+    end
+  end
+
+
   def self.gene_start_index(organism, chromosome)
     Persist.memory("gene_start_index", :key => [organism,chromosome]*":", :repo => CACHE) do
       TSV.pos_index(Organism.gene_positions(organism).produce, "Gene Start", :filters => [["field:Chromosome Name", chromosome]], :persist => true, :data_persist => true, :unnamed => true, :merge => true)

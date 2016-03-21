@@ -8,7 +8,7 @@ module Sequence
   input :num_samples, :integer, "Number of samples considered", 1
   dep do |jobname,options|
     if options[:exome]
-      Sequence.job(:affected_genes, jobname, :organism => options[:organism], :mutations => options[:mutations])
+      Sequence.job(:affected_genes, jobname, :organism => options[:organism], :mutations => options[:mutations], :coding => true, :principal => true)
     else
       Sequence.job(:genes, jobname, :organism => options[:organism], :positions => options[:mutations])
     end

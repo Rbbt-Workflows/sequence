@@ -6,8 +6,9 @@ module Sequence
   input *VCF_INPUT
   input *PRINCIPAL_INPUT
   input *NS_INPUT
+  input *CODING_INPUT
   dep &VCF_CONVERTER
-  task :mutated_isoforms_fast => :tsv do |mutations,organism,watson,vcf,principal,ns|
+  task :mutated_isoforms_fast => :tsv do |mutations,organism,watson,vcf,principal,ns,coding|
     begin
       step(:genomic_mutations)
       Misc.consume_stream mutations, true
@@ -20,6 +21,7 @@ module Sequence
     transcript_protein = Sequence.transcript_protein(organism)
     exon_position = Sequence.exon_position(organism)
     exon_transcript_offsets = Sequence.exon_transcript_offsets(organism)
+    biotype = Sequence.transcript_biotype(organism)
 
     chromosome_files = {}
 
@@ -47,6 +49,7 @@ module Sequence
           offset = eend - pos
         end
         Misc.zip_fields(exon_transcript_offsets[exon]).each do |transcript, exon_offset|
+          next if coding and biotype[transcript] != 'protein_coding'
           offsets << [transcript, exon_offset.to_i + offset, strand] * ":"
         end if exon_transcript_offsets.include? exon
         offsets
