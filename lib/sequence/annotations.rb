@@ -142,9 +142,9 @@ module Sequence
   def self.mut_sequence_ontology_term(mut, juncs, genes, exons, up_genes, down_genes, organism)
     miRNAs = []
     chr,pos,allele = mut.split(":")
-    @ense2enst ||= Organism.transcript_exons(organism).index :fields => ["Ensembl Exon ID"], :target => "Ensembl Transcript ID", :persist => true, :merge => true
+    @ense2enst ||= Organism.transcript_exons(organism).index :fields => ["Ensembl Exon ID"], :target => "Ensembl Transcript ID", :persist => true, :merge => true, :type => :double
     @enst2biotype ||= Organism.transcript_biotype(organism).tsv :persist => true, :type => :single
-    transcripts = exons.collect{|e| @ense2enst[e]}.uniq
+    transcripts = exons.collect{|e| @ense2enst[e]}.flatten.uniq
 
     case 
     #when (ad = ablated_domains(mi, organism)).any?
@@ -179,8 +179,8 @@ module Sequence
     #  'stop_retained_variant'
     #when change =~ /([A-Z*])\d+([A-Z*])/ && $1 == $2
     #  'synonymous_variant'
-    #when transcripts.select{|t| @enst2biotype[t] == "protein_coding"}.any?
-    #  'coding_sequence_variant'
+    when transcripts.select{|t| @enst2biotype[t] == "protein_coding"}.any?
+      'coding_sequence_variant'
     when (genes & miRNAs).any?
       'mature_miRNA_variant'
     #when change == "UTR5"
