@@ -19,6 +19,7 @@ synonymous_variant	A sequence variant where there is no resulting change to the 
 coding_sequence_variant	A sequence variant that changes the coding sequence	SO:0001580	Coding sequence variant	MODIFIER	17
 mature_miRNA_variant	A transcript variant located with the sequence of the mature miRNA	SO:0001620	Mature miRNA variant	MODIFIER	18
 5_prime_UTR_variant	A UTR variant of the 5' UTR	SO:0001623	5 prime UTR variant	MODIFIER	19
+3_prime_UTR_variant	A UTR variant of the 3' UTR	SO:0001623	3 prime UTR variant	MODIFIER	19
 non_coding_transcript_exon_variant	A sequence variant that changes non-coding exon sequence in a non-coding transcript	SO:0001792	Non coding transcript exon variant	MODIFIER	20
 intron_variant	A transcript variant occurring within an intron	SO:0001627	Intron variant	MODIFIER	21
 NMD_transcript_variant	A variant in a transcript that is the target of NMD	SO:0001621	NMD transcript variant	MODIFIER	22
