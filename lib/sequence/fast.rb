@@ -104,7 +104,7 @@ module Sequence
           end
         end
       end
-      mis.reject!{|mi| mi !~ /ENSP\d+:([A-Z*]+)\d+([A-Z*]+)/ or $1 == $2 } if ns
+      mis.reject!{|mi| mi !~ /ENSP\d+:([A-Z*]+)\d+([A-Z*]+)/i or $1 == $2 } if ns
       next if mis.empty?
 
       [mutation, mis]
