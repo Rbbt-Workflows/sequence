@@ -10,6 +10,7 @@ sequence=/$PWD filter="*.rb *.R *.js *.sass *.haml *.tsv" {
    util.rb
    reference.rb
    features.rb
+   bed.rb
    coding.rb
    fast.rb
    annotations.rb

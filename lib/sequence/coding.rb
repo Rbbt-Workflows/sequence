@@ -238,13 +238,12 @@ module Sequence
   export_synchronous :mutated_isoforms
 
 
-  dep :exon_junctions do |jobname,options|
+  dep Sequence, :exon_junctions, :positions => :mutations do |jobname,options|
     options = options.dup
     IndiferentHash.setup options
     options.merge!(:positions => options[:mutations])
     Sequence.job(:exon_junctions, jobname, options)
   end
-  #dep :type
   input *MUTATIONS_INPUT
   input *ORGANISM_INPUT
   input *WATSON_INPUT
