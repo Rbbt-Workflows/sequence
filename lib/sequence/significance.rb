@@ -6,7 +6,7 @@ module Sequence
   input *ORGANISM_INPUT
   input :exome, :boolean, "Limit analysis to exome bases", true
   input :num_samples, :integer, "Number of samples considered", 1
-  dep do |jobname,options|
+  dep :compute => :produce do |jobname,options|
     if options[:exome]
       Sequence.job(:affected_genes, jobname, :organism => options[:organism], :mutations => options[:mutations], :coding => true, :principal => true)
     else
@@ -14,11 +14,7 @@ module Sequence
     end
   end
   task :binomial_significance => :tsv do |mutations, organism, exome, num_samples|
-    if Step === mutations
-      Step.wait_for_jobs dependencies + [mutations]
-    else
-      Step.wait_for_jobs dependencies
-    end
+    mutations.join if Step === mutations
 
     if exome
       genes_step = step(:affected_genes)
