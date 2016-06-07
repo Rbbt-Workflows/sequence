@@ -242,6 +242,7 @@ module Sequence
     options = options.dup
     IndiferentHash.setup options
     options.merge!(:positions => options[:mutations])
+    options.delete :mutations
     Sequence.job(:exon_junctions, jobname, options)
   end
   input *MUTATIONS_INPUT
