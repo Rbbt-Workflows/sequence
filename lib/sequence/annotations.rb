@@ -223,43 +223,18 @@ module Sequence
   end
 
   dep :mutated_isoforms_fast
-  dep :exon_junctions do |jobname,options|
-    options = options.dup
-    IndiferentHash.setup options
-    options.merge!(:positions => options[:mutations])
-    Sequence.job(:exon_junctions, jobname, options)
-  end
-  dep :genes do |jobname,options|
-    options = options.dup
-    IndiferentHash.setup options
-    options.merge!(:positions => options[:mutations])
-    Sequence.job(:genes, jobname, options)
-  end
-  dep :exons do |jobname,options|
-    options = options.dup
-    IndiferentHash.setup options
-    options.merge!(:positions => options[:mutations])
-    Sequence.job(:exons, jobname, options)
-  end
-  dep :TSS do |jobname,options|
-    options = options.dup
-    IndiferentHash.setup options
-    options.merge!(:positions => options[:mutations])
-    Sequence.job(:TSS, jobname, options)
-  end
-  dep :TES do |jobname,options|
-    options = options.dup
-    IndiferentHash.setup options
-    options.merge!(:positions => options[:mutations])
-    Sequence.job(:TES, jobname, options)
-  end
+  dep :exon_junctions, :positions => :mutations
+  dep :genes, :positions => :mutations
+  dep :exons, :positions => :mutations
+  dep :TSS, :positions => :mutations
+  dep :TES, :positions => :mutations
   task :sequence_ontology => :tsv do
     Workflow.require_workflow "InterPro"
     so_term_order = Rbbt.share.databases.sequence_ontology.terms.tsv :fields => ["Order"], :type => :single, :cast => :to_i
     organism = step(:mutated_isoforms_fast).inputs[:organism]
     dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Mutated Isoform", "MI SO Terms", "MUT SO Terms", "SO Term"], :type => :double, :namespace => organism
     dumper.init
-    TSV.traverse TSV.paste_streams([step(:mutated_isoforms_fast), step(:exon_junctions), step(:genes), step(:exons), step(:TSS), step(:TES)], :fix_flat => true), 
+    TSV.traverse TSV.paste_streams([step(:mutated_isoforms_fast), step(:exon_junctions), step(:genes), step(:exons), step(:TSS), step(:TES)], :fix_flat => true, :sort => false), 
       :into => dumper, :bar => "Sequence ontology" do |mut,values|
       mut = mut.first if Array === mut
       mis, juncs, genes, exons, up_genes, down_genes = values
