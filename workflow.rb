@@ -24,6 +24,8 @@ module Sequence
       Sequence.job(:genomic_mutations, jobname, options.merge(:vcf_file => options[:mutations] || options[:positions]))
     end
   end
+
+  export :genomic_mutations
 end
 
 require 'sequence/reference'
