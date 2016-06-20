@@ -260,6 +260,7 @@ module Sequence
     dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Affected Transcripts"], :namespace => organism, :type => :flat
     dumper.init
     TSV.traverse exon_junctions, :bar => "Splicing Mutations", :type => :array, :into => dumper do |line|
+      next if line =~ /^#/
       mutation, *exon_junctions = line.split "\t"
       next if exon_junctions.empty?
       affected_transcripts = []
