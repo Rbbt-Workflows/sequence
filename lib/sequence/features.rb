@@ -21,6 +21,7 @@ module Sequence
       chr.sub!(/^chr/i,'')
       index = chromosome_files[chr] ||= Sequence.gene_chromosome_index(organism, chr)
       genes = index[pos.to_i]
+      next if genes.empty?
       [position, genes]
     end
   end
