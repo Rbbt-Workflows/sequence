@@ -135,6 +135,7 @@ module Sequence
     dumper.init
     
     TSV.traverse step(:exons), :bar => "Transcript offsets", :into => dumper, :type => :flat do |position,exons|
+      position = position.first if Array === position
       next if position.nil?
       pos = position.split(":")[1]
       next if pos.nil?

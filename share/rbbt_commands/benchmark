@@ -1,14 +1,39 @@
 #!/usr/bin/env ruby
 
 require 'rbbt-util'
+require 'rbbt/util/simpleopt'
+
+$0 = "rbbt #{$previous_commands*""} #{ File.basename(__FILE__) }" if $previous_commands
+
+options = SOPT.setup <<EOF
+
+Run Sequence workflow benchmark agains other methods
+
+$ #{$0} [options] <genomic_mutations_file> <size1> <size2> <size3> ...
+
+Use - to read from STDIN
+
+-h--help Print this help
+-m--method* Methods to compare to
+-p--plot* Plot file with results (default plot.svg)
+
+EOF
+if options[:help]
+  if defined? rbbt_usage
+    rbbt_usage 
+  else
+    puts SOPT.usage
+  end
+  exit 0
+end
+
+require 'rbbt-util'
 require 'rbbt/workflow'
 require 'rbbt/util/R'
 
 Workflow.require_workflow "Sequence"
 Workflow.require_workflow "Annovar"
 Workflow.require_workflow "VEP"
-
-options = SOPT.get('-m--method*:-p--plot*')
 
 file, *sizes = ARGV
 
