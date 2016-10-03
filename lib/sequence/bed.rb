@@ -84,4 +84,26 @@ module Sequence
 
   end
 
+  input *POSITIONS_INPUT
+  input :bed_file, :file, "BED file", nil, :stream => true
+  input :sorted, :boolean, "Positions and bed file are sorted", false
+  task :intersect_bed => :tsv do |positions,bed_file,sorted|
+    bed_io = TSV.traverse TSV.get_stream(bed_file), :type => :array, :into => :stream do |line|
+      chr, start, eend, id, *rest = line.split("\t")
+      chr.sub!('chr','')
+      [chr,start,eend,id] * ":"
+    end
+    bed_io = Misc.sort_mutation_stream(bed_io) unless sorted
+
+    bedfile = file('bedfile')
+    Open.write(bedfile, bed_io)
+
+    position_io = sorted ? TSV.get_stream(positions) : Misc.sort_mutation_stream(TSV.get_stream(positions))
+
+    io = Misc.open_pipe do |sin|
+      Misc.intersect_streams(position_io, Open.open(bedfile), sin)
+    end
+  end
+
+
 end
