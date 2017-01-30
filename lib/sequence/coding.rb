@@ -4,6 +4,9 @@ module Sequence
     case
     when (mut.length == 1 and mut != '-') #A
       Misc.IUPAC_to_base(mut) || []
+    when (mut=~/^--([ATCG][ATCG])$/)
+      alleles = $1.split("").collect{|mut| Misc.IUPAC_to_base(mut) }
+      ["DNV(#{alleles*""})"]
     when (mut[0] == "+"[0] and mut.length % 4 == 0) #+ATG
       ["Indel"]
     when (mut =~ /^-*$/ and mut.length % 3 == 0) #---
@@ -215,6 +218,20 @@ module Sequence
                 change = case allele
                          when "Indel"
                            [original, pos + 1, "Indel"] * ""
+                         when /DNV\(([ATCG]+)\)/
+                           alleles = $1.split("")
+                           alleles = alleles.collect{|allele| Misc::BASE2COMPLEMENT[allele] } if watson and strand == "-1"
+                           allele1, allele2 = alleles
+                           offset1 = offset.to_i
+                           offset2 = strand == "-1" ? offset1 - 1 : offset1 + 1
+                           if offset2 < 0 or offset2 > 2 
+                             [original, pos + 1, "Indel"] * ""
+                           else
+                             triplet[offset1.to_i] = allele1
+                             triplet[offset2.to_i] = allele2 
+                             new = Misc::CODON_TABLE[triplet] || 'X'
+                             [original, pos + 1, new] * ""
+                           end
                          when "FrameShift"
                            [original, pos + 1, "FrameShift"] * ""
                          else

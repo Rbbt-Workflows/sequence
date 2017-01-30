@@ -89,6 +89,20 @@ module Sequence
                             [original, pos + 1, "Indel"] * ""
                           when "FrameShift"
                             [original, pos + 1, "FrameShift"] * ""
+                          when /DNV\(([ATCG]+)\)/
+                            alleles = $1.split("")
+                            alleles = alleles.collect{|allele| Misc::BASE2COMPLEMENT[allele] } if watson and strand == "-1"
+                            allele1, allele2 = alleles
+                            offset1 = offset.to_i
+                            offset2 = strand == "-1" ? offset1 - 1 : offset1 + 1
+                            if offset2 < 0 or offset2 > 2 
+                              [original, pos + 1, "Indel"] * ""
+                            else
+                              triplet[offset1.to_i] = allele1
+                              triplet[offset2.to_i] = allele2 
+                              new = Misc::CODON_TABLE[triplet] || 'X'
+                              [original, pos + 1, new] * ""
+                            end
                           else
                             allele = Misc::BASE2COMPLEMENT[allele] if watson and strand == "-1"
                             triplet[offset.to_i] = allele 
