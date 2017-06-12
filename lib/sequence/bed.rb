@@ -84,24 +84,59 @@ module Sequence
 
   end
 
-  input *POSITIONS_INPUT
   input :bed_file, :file, "BED file", nil, :stream => true
   input :sorted, :boolean, "Positions and bed file are sorted", false
-  task :intersect_bed => :tsv do |positions,bed_file,sorted|
+  task :prepare_bed_file => :text do |bed_file,sorted|
     bed_io = TSV.traverse TSV.get_stream(bed_file), :type => :array, :into => :stream do |line|
-      chr, start, eend, id, *rest = line.split("\t")
+      chr, start, eend, id, score, strand, thickStart, thickEnd, itemRgb, blockCount, blockSize, blockStarts = line.split("\t")
       chr.sub!('chr','')
-      [chr,start,eend,id] * ":"
+      [chr,start,eend,id] * ":" + "-###-" + [blockCount, blockSize, blockStarts].compact * ":"
     end
     bed_io = Misc.sort_mutation_stream(bed_io) unless sorted
+    bed_io
+  end
 
-    bedfile = file('bedfile')
-    Open.write(bedfile, bed_io)
-
+  dep :prepare_bed_file, :compute => :produce
+  input *POSITIONS_INPUT
+  input :sorted, :boolean, "Positions and bed file are sorted", false
+  input :subset_blocks, :boolean, "Subset only matching blocks", true
+  task :intersect_bed => :tsv do |positions,sorted,subset_blocks|
     position_io = sorted ? TSV.get_stream(positions) : Misc.sort_mutation_stream(TSV.get_stream(positions))
 
     io = Misc.open_pipe do |sin|
-      Misc.intersect_streams(position_io, Open.open(bedfile), sin)
+      sin << "#Genomic Position\tRegion" << "\n"
+      Misc.intersect_streams(position_io, step(:prepare_bed_file).path.open, sin)
+    end
+    
+    if subset_blocks
+      TSV.traverse io, :type => :array, :into => :stream, :bar => "Intersecting with BED file" do |line|
+        next line if line =~ /^#/
+        mutation, bed_info = line.split("\t")
+        mchr, mpos, *rest = mutation.split(":")
+
+        entity_part, block_part = bed_info.split("-###-")
+        bchr, bstart, beend, bid = entity_part.split(":") 
+        blockCount, blockSize, blockStarts = block_part.split(":")
+
+        if blockCount.to_i > 0
+          match = false
+          bstart = bstart.to_i
+          mpos = mpos.to_i
+          blockStarts.split(",").zip(blockSize.split(",")).each do |start, size|
+            bbstart = bstart + start.to_i
+            bbeend = bstart + start.to_i + size.to_i
+            if mpos >= bbstart and mpos <= bbeend
+              match = true 
+            end
+          end
+          next unless match
+          line.split("-###-").first
+        else
+          line.split("-###-").first
+        end
+      end
+    else
+      io
     end
   end
 
