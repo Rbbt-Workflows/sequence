@@ -96,9 +96,12 @@ module Sequence
     bed_io
   end
 
-  dep :prepare_bed_file, :compute => :produce
+  dep :prepare_bed_file, :compute => :produce do |jobname,options|
+    name = File.basename(options[:bed_file] || options["bed_file"])
+    Sequence.job(:prepare_bed_file, name, options)
+  end
   input *POSITIONS_INPUT
-  input :sorted, :boolean, "Positions and bed file are sorted", false
+  input :sorted, :boolean, "Positions are sorted", false
   input :subset_blocks, :boolean, "Subset only matching blocks", true
   task :intersect_bed => :tsv do |positions,sorted,subset_blocks|
     position_io = sorted ? TSV.get_stream(positions) : Misc.sort_mutation_stream(TSV.get_stream(positions))
