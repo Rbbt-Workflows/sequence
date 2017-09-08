@@ -15,6 +15,7 @@ Use - to read from STDIN
 
 -h--help Print this help
 -m--method* Methods to compare to
+-s--sort Sort mutations
 -p--plot* Plot file with results (default plot.svg)
 
 EOF
@@ -48,6 +49,7 @@ times = {
   "Sequence" => [], 
   "Sequence_exec" => [], 
   "Sequence_fast" => [], 
+  "Sequence_cp" => [], 
   "Sequence_fast_no_MP" => [], 
 }
 organism = Organism.default_code("Hsa")
@@ -56,7 +58,9 @@ sizes.each do |size|
   size = size.to_i
 
   text = ""
-  text = Open.read(file).split("\n").reject{|l| l =~ /^M:/}[1..size].sort * "\n"
+  lines = Open.read(file).split("\n").reject{|l| l =~ /^M:/}[1..size]
+  lines = lines.sort if options[:sort]
+  text = lines * "\n" + "\n"
 
   TmpFile.with_file(text) do |tmpfile|
     Path.setup(tmpfile)
@@ -98,7 +102,8 @@ sizes.each do |size|
       Open.open(tmpfile) do |f|
         Log.info "Sequence" + " " +  size.to_s
         job = Sequence.job(:mutated_isoforms, jobname + ".steps", :mutations => f, :organism => organism)
-        job.fork.join
+        job.fork
+        job.join
         time = job.info[:time_elapsed]
         times["Sequence"] << time
         Log.info Log.color(:red, "Sequence") + " " + Log.color(:blue, size.to_s) + " " + Log.color(:yellow, time.to_i)
@@ -135,10 +140,23 @@ sizes.each do |size|
       Open.open(tmpfile) do |f|
         Log.info "Sequence_fast" + " " +  size.to_s
         job = Sequence.job(:mutated_isoforms_fast, jobname + ".fast", :mutations => f, :organism => organism)
-        job.run
+        job.fork(true)
+        job.join
         time = job.info[:time_elapsed]
         times["Sequence_fast"] << time
         Log.info Log.color(:red, "Sequence_fast") + " " + Log.color(:blue, size.to_s) + " " + Log.color(:yellow, time.to_i)
+      end
+    end
+    
+    if options[:method].nil? or options[:method].include? "Sequence_cp"
+      Open.open(tmpfile) do |f|
+        Log.info "Sequence_cp" + " " +  size.to_s
+        job = Sequence.job(:mutated_isoforms_fast, jobname + ".cp", :mutations => f, :organism => organism, :coding => true, :principal => true)
+        job.fork(true)
+        job.join
+        time = job.info[:time_elapsed]
+        times["Sequence_cp"] << time
+        Log.info Log.color(:red, "Sequence_cp") + " " + Log.color(:blue, size.to_s) + " " + Log.color(:yellow, time.to_i)
       end
     end
   end
@@ -148,12 +166,13 @@ TSV.setup(times, :key_field => "Method", :fields => sizes, :type => :list, :cast
 
 puts Log.color :magenta, "Benchmark results"
 
+times.delete_if{|k,v| v.empty? }
 puts times.to_s
 
 times.R <<-EOF
 
-library('reshape')
-library('ggplot2')
+rbbt.require('reshape')
+rbbt.require('ggplot2')
 
 data$Method = rownames(data)
 m = melt(data)
