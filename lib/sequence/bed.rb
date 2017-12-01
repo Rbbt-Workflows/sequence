@@ -103,8 +103,7 @@ module Sequence
   input *POSITIONS_INPUT
   input :sorted, :boolean, "Positions are sorted", false
   input :subset_blocks, :boolean, "Subset only matching blocks", true
-  input :one_based, :boolean, "Positions are 1-based like from Ensembl, as opposed to 0-based like from UCSC", true
-  task :intersect_bed => :tsv do |positions,sorted,subset_blocks,one_based|
+  task :intersect_bed => :tsv do |positions,sorted,subset_blocks|
     position_io = sorted ? TSV.get_stream(positions) : Misc.sort_mutation_stream(TSV.get_stream(positions))
 
     io = Misc.open_pipe do |sin|
