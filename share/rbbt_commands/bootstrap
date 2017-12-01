@@ -2,6 +2,7 @@
 
 mutations_hg19 = Rbbt.examples.affected_genes["10_000"].mutations.find(:lib).list
 mutations_hg18 = Rbbt.examples.affected_genes.may2009.mutations.find(:lib).list
+mutations_hg38 = Rbbt.examples.mutated_isoforms_fast.may2017.mutations.find(:lib).list
 
 require 'rbbt/workflow'
 
@@ -15,7 +16,14 @@ Organism.organism_codes.each do |code|
   next if code == "Hsa"
   if code =~ /Hsa/
     build = Organism.hg_build code
-    mutations[code] = build == 'hg19' ? mutations_hg19 : mutations_hg18
+    mutations[code] = case build
+                      when 'hg19'
+                       mutations_hg19 
+                      when 'hg18'
+                       mutations_hg18
+                      when 'hg38'
+                       mutations_hg38
+                      end
   else
     mutations[code] = []
     Organism.chromosomes(code).list.each do |chromosome|

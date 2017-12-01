@@ -16,7 +16,7 @@ module Sequence
     rescue
     end
 
-    raise ParameterException, "No mutations specified: #{path}" if mutations.nil?
+    raise ParameterException, "No mutations specified" if mutations.nil?
 
     transcript_protein = Sequence.transcript_protein(organism)
     exon_position = Sequence.exon_position(organism)
@@ -124,6 +124,6 @@ module Sequence
       [mutation, mis]
     end
   end
-  export_synchronous :mutated_isoforms_fast
+  export_stream :mutated_isoforms_fast
 
 end
