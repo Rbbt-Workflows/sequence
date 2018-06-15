@@ -3,8 +3,9 @@ module Sequence
   input *POSITIONS_INPUT
   input *ORGANISM_INPUT
   input *VCF_INPUT
+  input :full_reference_sequence, :boolean, "Consider the third field of the position an alternate allele and return the whole deleted sequence in indels", false 
   dep &VCF_CONVERTER
-  task :reference => :tsv do |positions,organism,vcf|
+  task :reference => :tsv do |positions,organism,vcf,full_sequence|
     begin
       step(:genomic_mutations)
       Misc.consume_stream positions, true
@@ -18,7 +19,7 @@ module Sequence
 
     TSV.traverse positions, :bar => "Reference", :type => :array, :into => dumper do |position|
       begin
-        chr, pos = position.split(/[\s:\t]+/)
+        chr, pos, alt = position.split(/[\s:\t]+/)
         next if pos.nil?
         chr.sub!(/^chr/i,'')
         chr = "MT" if chr == "M"
@@ -29,8 +30,14 @@ module Sequence
                                          end
         next if file == :missing
 
-        file.seek pos.to_i - 1
-        ref = file.getc
+        pos = pos.to_i
+        if full_sequence and alt["-"]
+          file.seek pos - 2
+          ref = file.read(alt.length + 1)
+        else
+          file.seek pos.to_i - 1
+          ref = file.getc
+        end
         [position, ref]
       rescue Exception
         Log.exception $!
