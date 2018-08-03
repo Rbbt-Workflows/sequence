@@ -18,6 +18,7 @@ module Sequence
 
     raise ParameterException, "No mutations specified" if mutations.nil?
 
+    blacklist_chromosomes = Organism.blacklist_chromosomes(organism).list
     transcript_protein = Sequence.transcript_protein(organism)
     exon_position = Sequence.exon_position(organism)
     exon_transcript_offsets = Sequence.exon_transcript_offsets(organism)
@@ -28,9 +29,14 @@ module Sequence
     dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Mutated Isoform"], :type => :flat, :namespace => organism
     dumper.init
 
-    TSV.traverse mutations, :cpus => 1, :bar => self.progress_bar("Mutated Iso. Fast"), :into => dumper, :type => :array do |mutation|
+    cpus = config('cpus', 'mutated_isoforms', :default => 5)
+    TSV.traverse mutations, :cpus => cpus.to_i, :bar => self.progress_bar("Mutated Iso. Fast"), :into => dumper, :type => :array do |mutation|
       next if mutation.nil?
       chr, pos, mut_str = mutation.split(":")
+      if blacklist_chromosomes.include? chr
+        Log.low "Chromosome '#{chr}' is blacklisted"
+        next
+      end
       next if mut_str.nil?
       chr.sub!(/^chr/i,'')
       pos = pos.to_i
