@@ -29,7 +29,7 @@ module Sequence
     dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Mutated Isoform"], :type => :flat, :namespace => organism
     dumper.init
 
-    cpus = config('cpus', 'mutated_isoforms', :default => 5)
+    cpus = config('cpus', 'mutated_isoforms', :default => 3)
     TSV.traverse mutations, :cpus => cpus.to_i, :bar => self.progress_bar("Mutated Iso. Fast"), :into => dumper, :type => :array do |mutation|
       next if mutation.nil?
       chr, pos, mut_str = mutation.split(":")
