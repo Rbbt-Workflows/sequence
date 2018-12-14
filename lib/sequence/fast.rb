@@ -1,5 +1,7 @@
 module Sequence
 
+
+
   input *MUTATIONS_INPUT
   input *ORGANISM_INPUT
   input *WATSON_INPUT
@@ -9,11 +11,9 @@ module Sequence
   input *CODING_INPUT
   dep &VCF_CONVERTER
   task :mutated_isoforms_fast => :tsv do |mutations,organism,watson,vcf,principal,ns,coding|
-    begin
-      step(:genomic_mutations)
-      Misc.consume_stream mutations, true
+    if dependencies.select{|d| d.task_name == :genomic_mutations}.any?
+      mutations.close if IO === mutations
       mutations = step(:genomic_mutations)
-    rescue
     end
 
     raise ParameterException, "No mutations specified" if mutations.nil?

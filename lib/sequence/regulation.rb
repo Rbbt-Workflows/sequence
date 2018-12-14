@@ -6,11 +6,9 @@ module Sequence
   dep &VCF_CONVERTER
   input :distance, :integer, "Distance to TSS", 1000
   task :TSS => :tsv do |positions,organism,vcf,distance|
-    begin
-      step(:genomic_mutations)
-      Misc.consume_stream positions, true
+    if dependencies.select{|d| d.task_name == :genomic_mutations}.any?
+      positions.close
       positions = step(:genomic_mutations)
-    rescue
     end
     raise ParameterException, "No 'positions' specified" if positions.nil?
 
@@ -56,11 +54,9 @@ module Sequence
   dep &VCF_CONVERTER
   input :distance, :integer, "Distance to TSS", 1000
   task :TES => :tsv do |positions,organism,vcf,distance|
-    begin
-      step(:genomic_mutations)
-      Misc.consume_stream positions, true
+    if dependencies.select{|d| d.task_name == :genomic_mutations}.any?
+      positions.close
       positions = step(:genomic_mutations)
-    rescue
     end
     raise ParameterException, "No 'positions' specified" if positions.nil?
 

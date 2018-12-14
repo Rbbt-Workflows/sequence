@@ -139,7 +139,7 @@ module Sequence
       vcf = TSV.get_stream vcf
       header, line, preamble = header vcf
 
-      if line =~ /#/
+      if line =~ /^#/
         fields = line.sub(/^#/,'').split(/\s+/)
         line = vcf.gets
       else
@@ -211,6 +211,7 @@ module Sequence
 
             line = vcf.gets
           end
+          vcf.close if vcf.respond_to? :close
           vcf.join if vcf.respond_to? :join
           sin.close if sin.respond_to? :close
         rescue Exception
@@ -233,15 +234,10 @@ module Sequence
     Sequence::VCF.open_stream(vcf, !info, !format,!preamble)
   end
 
-  dep do |name, options|
-    options = Misc.add_defaults options, :info => false, :format => false, :preamble => false
-    Sequence.job(:expanded_vcf, name, options)
-  end
-  input :vcf_file, :text, "VCF file", nil, :stream => true
+  dep :expanded_vcf, :info => false, :format => false, :preamble => false
   input :quality, :float, "Quality threshold", nil
-  task :genomic_mutations => :array do |vcf_file,quality|
+  task :genomic_mutations => :array do |quality|
     expanded_vcf = step(:expanded_vcf)
-    Misc.consume_stream vcf_file, true 
 
     TSV.traverse expanded_vcf, :bar => "Mutations from VCF", :key_field => "Genomic Mutation", :fields => ["Quality"], :cast => :to_f, :type => :single, :into => :stream do |mutation,qual|
       next if quality and qual > 0 and qual < quality
@@ -249,15 +245,10 @@ module Sequence
     end
   end
 
-  dep do |name, options|
-    options = Misc.add_defaults options, :info => true, :format => true, :preamble => false
-    Sequence.job(:expanded_vcf, name, options)
-  end
-  input :vcf_file, :text, "VCF file", nil, :stream => true
+  dep :expanded_vcf, :info => true, :format => true, :preamble => false 
   input :quality, :float, "Quality threshold", nil
-  task :cnvs => :array do |vcf_file,quality|
-    expanded_vcf = step(:expanded_vcf).join
-    Misc.consume_stream vcf_file, true 
+  task :cnvs => :array do |quality|
+    expanded_vcf = step(:expanded_vcf).load
 
     fields = TSV.parse_header(expanded_vcf.path).fields
     tumor_tcn = fields.select{|f| f =~ /TUMOUR:TCN/i }.first

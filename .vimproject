@@ -16,6 +16,8 @@ sequence=/$PWD filter="*.rb *.R *.js *.sass *.haml *.tsv" {
    annotations.rb
    significance.rb
    regulation.rb
+
+   test.rb
   }
  }
  share=share filter="*"{

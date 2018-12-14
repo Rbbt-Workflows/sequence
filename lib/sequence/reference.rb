@@ -6,11 +6,9 @@ module Sequence
   input :full_reference_sequence, :boolean, "Consider the third field of the position an alternate allele and return the whole deleted sequence in indels", false 
   dep &VCF_CONVERTER
   task :reference => :tsv do |positions,organism,vcf,full_sequence|
-    begin
-      step(:genomic_mutations)
-      Misc.consume_stream positions, true
-      positions = step(:genomic_mutations) 
-    rescue
+    if dependencies.select{|d| d.task_name == :genomic_mutations}.any?
+      positions.close if IO === positions
+      positions = step(:genomic_mutations)
     end
 
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Reference Allele"], :type => :single, :namespace => organism

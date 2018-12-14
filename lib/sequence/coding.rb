@@ -124,10 +124,9 @@ module Sequence
 
   dep :exons
   task :transcript_offsets => :tsv do
-    begin
-      step(:genomic_mutations)
+    if dependencies.select{|d| d.task_name == :genomic_mutations}.any?
+      mutations.close if IO === mutations
       mutations = step(:genomic_mutations)
-    rescue
     end
     organism = step(:exons).inputs[1]
 
@@ -172,12 +171,9 @@ module Sequence
   input *VCF_INPUT
   input *PRINCIPAL_INPUT
   input *NS_INPUT
-  dep do |jobname, options|
-    options[:positions] = options[:mutations]
-    Sequence.job(:transcript_offsets, jobname, options)
-  end
+  dep :transcript_offsets, :positions => :mutations
   task :mutated_isoforms => :tsv do |mutations,organism,watson,vcf,principal,ns|
-    Misc.consume_stream mutations, true
+    mutations.close if IO === mutations
 
     transcript_protein = Sequence.transcript_protein(organism)
 
@@ -257,20 +253,15 @@ module Sequence
   export_synchronous :mutated_isoforms
 
 
-  dep Sequence, :exon_junctions, :positions => :mutations do |jobname,options|
-    options = options.dup
-    IndiferentHash.setup options
-    options.merge!(:positions => options[:mutations])
-    options.delete :mutations
-    Sequence.job(:exon_junctions, jobname, options)
-  end
   input *MUTATIONS_INPUT
   input *ORGANISM_INPUT
   input *WATSON_INPUT
   input *VCF_INPUT
+  dep :exon_junctions, :positions => :mutations 
   task :splicing_mutations => :tsv do |_pos|
     Misc.consume_stream _pos, true
-    exon_junctions = step(:exon_junctions).grace
+
+    exon_junctions = step(:exon_junctions)
 
     organism = exon_junctions.inputs[:organism]
     transcript_exons = Sequence.transcript_exons(organism)
