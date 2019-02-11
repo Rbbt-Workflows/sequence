@@ -18,7 +18,7 @@ module Sequence
         next if part.nil? or part.empty?
         e, c = part.split(":")
         g = if e =~ /ENSP/
-              next unless c =~ /^([A-Z*])\d+([A-Z*])/ and $1 != $2
+              next unless c =~ /^([A-Z*])\d+([A-Z*]+)/i and $1 != $2
               protein_index[e]
             else
               next if c =~ /^UTR\d$/
