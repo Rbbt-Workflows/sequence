@@ -22,4 +22,5 @@ module Sequence
     raise ParameterException, "No positions given" if positions.nil?
     Organism.liftOver(positions, source, target)
   end
+
 end

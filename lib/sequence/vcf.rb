@@ -277,7 +277,7 @@ module Sequence
   end
 
 
-  dep :reference, :full_reference_sequence => true
+  dep :reference, :full_reference_sequence => true, :compute => :produce
   extension :vcf
   task :mutations_to_vcf => :tsv do |mutations|
     dumper =  TSV::Dumper.new :key_field => "CHROM", :fields => %w(POS ID REF ALT QUAL FILTER INFO), :type => :list
