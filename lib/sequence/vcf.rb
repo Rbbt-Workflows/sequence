@@ -236,11 +236,14 @@ module Sequence
 
   dep :expanded_vcf, :info => false, :format => false, :preamble => false
   input :quality, :float, "Quality threshold", nil
-  task :genomic_mutations => :array do |quality|
+  input :filters, :array, "Pass only", ["PASS"]
+  task :genomic_mutations => :array do |quality,filters|
     expanded_vcf = step(:expanded_vcf)
 
-    TSV.traverse expanded_vcf, :bar => "Mutations from VCF", :key_field => "Genomic Mutation", :fields => ["Quality"], :cast => :to_f, :type => :single, :into => :stream do |mutation,qual|
-      next if quality and qual > 0 and qual < quality
+    TSV.traverse expanded_vcf, :bar => "Mutations from VCF", :key_field => "Genomic Mutation", :fields => ["Quality","Filter"], :type => :list, :into => :stream do |mutation,values|
+      qual, filter = values
+      next if filters.any? and not (filter.split(",") & filters).any?
+      next if quality and qual.to_f < quality
       mutation
     end
   end
