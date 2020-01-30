@@ -1,3 +1,4 @@
+require 'bio'
 module Sequence
 
   def self.alleles(mut)
@@ -7,15 +8,15 @@ module Sequence
     when (mut=~/^--([ATCG][ATCG])$/)
       alleles = $1.split("").collect{|mut| Misc.IUPAC_to_base(mut) }
       ["DNV(#{alleles*""})"]
-    when (mut[0] == "+"[0] and mut.length % 4 == 0) #+ATG
+    when (mut[0] == "+"[0] and mut.length % 3 == 1) #+ATG
       ["Indel"]
     when (mut =~ /^-*$/ and mut.length % 3 == 0) #---
       ["Indel"]
-    when ((_dash = mut.scan('-').length) % 3 == (mut.length - _dash)  % 3) #---
+    when (mut[0] == "-" and ((_dash = mut.scan('-').length) % 3 == (mut.length - _dash)  % 3)) #---
       ["Indel"]
-    when (mut.match(/^[ATCG]+$/) and mut.length > 2 and mut.length % 4 == 0) #GATG where G is the reference
+    when (mut.match(/^[ATCG]+$/) and mut.length > 2 and mut.length % 3 == 1) #GATG where G is the reference
       ["Indel"]
-    when (mut[0] != "-"[0] and mut[1] == "-"[0] and mut.length % 4 == 0) #G---
+    when (mut[0] != "-"[0] and mut[1] == "-"[0] and mut.length % 3 == 1) #G---
       ["Indel"]
     else #+A - GT etc
       ["FrameShift"]
@@ -68,6 +69,85 @@ module Sequence
 
 
     [sequence[(codon * 3)..((codon + 1) * 3 - 1)], codon_offset, codon] * ":"
+  end
+
+  def self.downstream(organism, transcript, mutation, codon)
+    transcript_sequence ||= Sequence.transcript_sequence(organism)
+    transcript_5utr ||= Sequence.transcript_5utr(organism) 
+    transcript_3utr ||= Sequence.transcript_3utr(organism) 
+    transcript_phase ||= Sequence.transcript_phase(organism)
+
+    sequence = transcript_sequence[transcript]
+    utr5 = transcript_5utr[transcript]
+    utr3 = transcript_3utr[transcript]
+    phase = transcript_phase[transcript] || 0
+    phase = phase.to_i
+    if phase < 0
+      utr5 = - phase if utr5 == 0
+      phase = 0
+    end
+    wt_aa_sequence = Bio::Sequence::NA.new(("N" * phase) << sequence[utr5..sequence.length-utr3-1]).translate
+
+    triplet, codon_offset, codon_num = codon.split(":")
+    codon_num = codon_num.to_i
+    codon_offset = codon_offset.to_i
+    position = utr5 + 3*(codon_num) + codon_offset
+    pre = sequence[0..position - 1]
+    post = sequence[position..-1]
+
+    bases = mutation.split("")
+
+    insertion = bases.first != '-'
+
+    while "-" == bases.first
+      post = post[1..-1] if post
+      bases.shift 
+    end
+
+    if "+" == bases.first
+      bases.shift 
+      pre << post[0]
+      post = post[1..-1] 
+    end
+
+    post = "" if post.nil?
+    post = (bases * "")  + post
+
+    mut_sequence = pre + post
+    mut_aa_sequence = Bio::Sequence::NA.new(("N" * phase) << mut_sequence[utr5..-1]).translate
+
+    if index = mut_aa_sequence.index("*")
+      mut_aa_sequence = mut_aa_sequence[0..index]
+    end
+
+    #addition = false
+    #while mut_aa_sequence[codon_num] == wt_aa_sequence[codon_num] and ! mut_aa_sequence[codon_num].nil?
+    #  codon_num += 1
+    #end if insertion
+
+    i = 1
+    while i < mut_aa_sequence.length
+      break if mut_aa_sequence[-i] != wt_aa_sequence[-i]
+      i += 1
+    end
+
+    if mut_aa_sequence.length < codon_num
+      return ["?", codon_num, wt_aa_sequence[codon_num]]
+    end
+
+    lost = wt_aa_sequence[codon_num..-i].length
+    sequence = if lost < 10
+                 "-" * lost + mut_aa_sequence[codon_num..-i]
+               else
+                 mut_aa_sequence[codon_num..-1]
+               end
+
+    raise mutation if sequence.nil?
+    if sequence[0] == '-' && wt_aa_sequence[codon_num] == sequence[1]
+        sequence[0..1] = "+"
+    end
+    sequence = "" if sequence == "+"
+    [sequence, codon_num, wt_aa_sequence[codon_num]]
   end
 
   dep do |jobname, options|
@@ -172,7 +252,7 @@ module Sequence
   input *PRINCIPAL_INPUT
   input *NS_INPUT
   dep :transcript_offsets, :positions => :mutations
-  task :mutated_isoforms => :tsv do |mutations,organism,watson,vcf,principal,ns|
+  task :mutated_isoforms_old => :tsv do |mutations,organism,watson,vcf,principal,ns|
     mutations.close if IO === mutations
 
     transcript_protein = Sequence.transcript_protein(organism)
@@ -304,4 +384,93 @@ module Sequence
     end
   end
   export_asynchronous :splicing_mutations
+
+  input *MUTATIONS_INPUT
+  input *ORGANISM_INPUT
+  input *WATSON_INPUT
+  input *VCF_INPUT
+  input *PRINCIPAL_INPUT
+  input *NS_INPUT
+  dep :transcript_offsets, :positions => :mutations
+  task :mutated_isoforms => :tsv do |mutations,organism,watson,vcf,principal,ns|
+    mutations.close if IO === mutations
+
+    transcript_protein = Sequence.transcript_protein(organism)
+
+    dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Mutated Isoform"], :type => :flat, :namespace => organism
+    dumper.init
+    TSV.traverse step(:transcript_offsets), :bar => "Mutated Isoforms", :into => dumper, :type => :flat do |mutation,transcript_offsets|
+      mutation = mutation.first if Array === mutation
+      next if mutation.nil?
+      chr, pos, mut_str = mutation.split(":")
+      next if mut_str.nil?
+      chr.sub!(/^chr/i,'')
+      pos = pos.to_i
+
+      mis = []
+      mut_str.split(',').each do |mut|
+        alleles = Sequence.alleles mut
+
+        transcript_offsets.collect{|to| to.split ":" }.each do |transcript, transcript_offset, strand|
+          next if principal and not Appris::PRINCIPAL_TRANSCRIPTS.include?(transcript)
+          protein = transcript_protein[transcript]
+          next if protein.nil? or protein.empty?
+
+          begin
+            codon = Sequence.codon_at_transcript_position(organism, transcript, transcript_offset.to_i);
+
+            case codon
+
+            when "UTR5", "UTR3"
+              mis << [transcript, codon] * ":"
+
+            else # Protein mutation
+              triplet, offset, pos = codon.split ":"
+              next if not triplet.length == 3
+              original = Misc::CODON_TABLE[triplet]
+              next if alleles.empty?
+              pos = pos.to_i
+              alleles.each do |allele|
+                change = case allele
+                         when "Indel"
+                           change, pos, original = Sequence.downstream(organism, transcript, mut, codon)
+                           [original, pos + 1, "Indel(#{change})"] * ""
+                         when /DNV\(([ATCG]+)\)/
+                           alleles = $1.split("")
+                           alleles = alleles.collect{|allele| Misc::BASE2COMPLEMENT[allele] } if watson and strand == "-1"
+                           allele1, allele2 = alleles
+                           offset1 = offset.to_i
+                           offset2 = strand == "-1" ? offset1 - 1 : offset1 + 1
+                           if offset2 < 0 or offset2 > 2 
+                             change, pos, original = Sequence.downstream(organism, transcript, mut, codon)
+                             [original, pos + 1, "Indel(#{change})"] * ""
+                           else
+                             triplet[offset1.to_i] = allele1
+                             triplet[offset2.to_i] = allele2 
+                             new = Misc::CODON_TABLE[triplet] || 'X'
+                             [original, pos + 1, new] * ""
+                           end
+                         when "FrameShift"
+                           change, pos, original = Sequence.downstream(organism, transcript, mut, codon)
+                           [original, pos + 1, "FrameShift(#{change})"] * ""
+                         else
+                           allele = Misc::BASE2COMPLEMENT[allele] if watson and strand == "-1"
+                           triplet[offset.to_i] = allele 
+                           new = Misc::CODON_TABLE[triplet]
+                           [original, pos + 1, new] * ""
+                         end
+                mis << [protein, change] * ":"
+              end
+            end
+          rescue TranscriptError
+            Log.debug{$!.message}
+          end
+        end
+      end
+      mis.reject!{|mi| mi !~ /ENS.*P\d+:([A-Z*]+)\d+([A-Z*]+)/i or $1 == $2 } if ns
+      next if mis.empty?
+
+      [mutation, mis]
+    end
+  end
 end

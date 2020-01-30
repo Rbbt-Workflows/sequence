@@ -45,8 +45,8 @@ module Sequence
   end
   export_synchronous :reference
 
-  dep :reference
-  dep :exons
+  dep :reference, :compute => :produce
+  dep :exons, :compute => :produce
   task :gene_strand_reference => :tsv do 
     pasted = TSV.paste_streams [step(:reference), step(:exons)], :sort => false
     organism = step(:reference).inputs["organism"]

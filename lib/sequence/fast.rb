@@ -68,7 +68,7 @@ module Sequence
         alleles = Sequence.alleles mut
 
         transcript_offsets.collect{|to| to.split ":" }.each do |transcript, transcript_offset, strand|
-          next if principal and not Appris::PRINCIPAL_TRANSCRIPTS.include?(transcript)
+          next if principal and organism =~ /^Hsa/ and not Appris::PRINCIPAL_TRANSCRIPTS.include?(transcript)
           protein = transcript_protein[transcript]
           next if protein.nil? or protein.empty?
 
@@ -92,17 +92,20 @@ module Sequence
                 alleles.each do |allele|
                   change = case allele
                           when "Indel"
-                            [original, pos + 1, "Indel"] * ""
+                            change, pos, original = Sequence.downstream(organism, transcript, mut, codon)
+                            [original, pos + 1, "Indel(#{change})"] * ""
                           when "FrameShift"
-                            [original, pos + 1, "FrameShift"] * ""
+                            change, pos, original = Sequence.downstream(organism, transcript, mut, codon)
+                            [original, pos + 1, "FrameShift(#{change})"] * ""
                           when /DNV\(([ATCG]+)\)/
-                            alleles = $1.split("")
-                            alleles = alleles.collect{|allele| Misc::BASE2COMPLEMENT[allele] } if watson and strand == "-1"
-                            allele1, allele2 = alleles
+                            as = $1.split("")
+                            as = as.collect{|allele| Misc::BASE2COMPLEMENT[allele] } if watson and strand == "-1"
+                            allele1, allele2 = as
                             offset1 = offset.to_i
                             offset2 = strand == "-1" ? offset1 - 1 : offset1 + 1
                             if offset2 < 0 or offset2 > 2 
-                              [original, pos + 1, "Indel"] * ""
+                              change, pos, original = Sequence.downstream(organism, transcript, mut, codon)
+                              [original, pos + 1, "Indel(#{change})"] * ""
                             else
                               triplet[offset1.to_i] = allele1
                               triplet[offset2.to_i] = allele2 
@@ -124,7 +127,7 @@ module Sequence
           end
         end
       end
-      mis.reject!{|mi| mi !~ /ENSP\d+:([A-Z*]+)\d+([A-Z*]+)/i or $1 == $2 } if ns
+      mis.reject!{|mi| mi !~ /ENS.*P\d+:([A-Z*]+)\d+([A-Z*]+)/i or $1 == $2 } if ns
       next if mis.empty?
 
       [mutation, mis]

@@ -280,17 +280,20 @@ module Sequence
   end
 
 
-  dep :reference, :full_reference_sequence => true, :compute => :produce
+  dep :reference, :full_reference_sequence => true, :compute => :produce do |jobname,options|
+    {:inputs => options, :jobname => jobname}
+  end
   extension :vcf
-  task :mutations_to_vcf => :tsv do |mutations|
+  task :mutations_to_vcf => :tsv do 
     dumper =  TSV::Dumper.new :key_field => "CHROM", :fields => %w(POS ID REF ALT QUAL FILTER INFO), :type => :list
     dumper.init(:preamble => "##fileformat=VCFv4.1")
     TSV.traverse step(:reference), :into => dumper do |mutation, reference|
       chr, pos, alt = mutation.split(":")
 
       if alt[0] == "-" 
-        alt = reference[0]
+        alt = reference[0] + alt.gsub("-",'')
         pos = pos.to_i - 1
+        reference = reference[0..-(alt.length)]
       end
 
       if alt[0] == "+"
