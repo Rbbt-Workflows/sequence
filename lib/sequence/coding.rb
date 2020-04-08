@@ -88,16 +88,12 @@ module Sequence
       phase = 0
     end
 
-    if phase > 0
-      utr5 = - phase if utr5 == 0
-    end
-
     wt_aa_sequence = Bio::Sequence::NA.new(("N" * phase) << sequence[utr5..sequence.length-utr3-1]).translate
 
     triplet, codon_offset, codon_num = codon.split(":")
     codon_num = codon_num.to_i
     codon_offset = codon_offset.to_i
-    position = utr5 + 3*(codon_num) + codon_offset
+    position = (utr5 - phase) + 3*(codon_num) + codon_offset
 
     pre = sequence[0..position - 1]
     post = sequence[position..-1]
