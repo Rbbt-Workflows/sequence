@@ -236,7 +236,7 @@ module Sequence
 
   dep :expanded_vcf, :info => false, :format => false, :preamble => false
   input :quality, :float, "Quality threshold", nil
-  input :filters, :array, "Pass only", ["PASS"]
+  input :filters, :array, "Pass only", []
   task :genomic_mutations => :array do |quality,filters|
     expanded_vcf = step(:expanded_vcf)
 

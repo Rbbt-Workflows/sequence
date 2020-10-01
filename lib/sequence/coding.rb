@@ -31,7 +31,7 @@ module Sequence
 
     utr5 = transcript_5utr[transcript]
       
-    if utr5.nil? or utr5 == 0 or utr5 == "0" 
+    if utr5.nil? || utr5 == 0 || utr5 == "0" 
       phase = transcript_phase[transcript]
       raise TranscriptError, "No UTR5 and no phase for transcript: #{ transcript }" if phase.nil?
       phase = phase.to_i
