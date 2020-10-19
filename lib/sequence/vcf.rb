@@ -280,7 +280,7 @@ module Sequence
   end
 
 
-  dep :reference, :full_reference_sequence => true, :compute => :produce do |jobname,options|
+  dep :reference, :full_reference_sequence => true, :compute => :produce, :vcf => false do |jobname,options|
     {:inputs => options, :jobname => jobname}
   end
   extension :vcf
@@ -289,6 +289,11 @@ module Sequence
     dumper.init(:preamble => "##fileformat=VCFv4.1")
     TSV.traverse step(:reference), :into => dumper do |mutation, reference|
       chr, pos, alt = mutation.split(":")
+
+      if reference.nil? || reference.empty?
+        Log.warn "Reference not available for mutation #{mutation}"
+        next
+      end
 
       if alt[0] == "-" 
         alt = reference[0] + alt.gsub("-",'')
