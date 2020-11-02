@@ -5,7 +5,7 @@ module Sequence
   task :affected_genes => :tsv do
     organism = step(:mutated_isoforms_fast).inputs["organism"]
 
-    protein_index = Organism.identifiers(organism).index :target => "Ensembl Gene ID", :fields => ["Ensembl Protein ID"], :persist => true
+    protein_index = Organism.protein_identifiers(organism).index :target => "Ensembl Gene ID", :fields => ["Ensembl Protein ID"], :persist => true
     transcript_index = Organism.gene_transcripts(organism).index :target => "Ensembl Gene ID", :fields => ["Ensembl Transcript ID"], :persist => true
 
     pasted = TSV.paste_streams([step(:splicing_mutations), step(:mutated_isoforms_fast)], :sort => true)
@@ -17,7 +17,7 @@ module Sequence
       genes = rest.collect do |part|
         next if part.nil? or part.empty?
         e, c = part.split(":")
-        g = if e =~ /ENSP/
+        g = if e =~ /ENS.*P/
               next unless c =~ /^([A-Z*])\d+([A-Z*]+)/i and $1 != $2
               protein_index[e]
             else
