@@ -31,7 +31,7 @@ module Sequence
 
     utr5 = transcript_5utr[transcript]
       
-    if utr5.nil? || utr5 == 0 || utr5 == "0" 
+    if utr5.nil? or utr5 == 0 or utr5 == "0" 
       phase = transcript_phase[transcript]
       raise TranscriptError, "No UTR5 and no phase for transcript: #{ transcript }" if phase.nil?
       phase = phase.to_i
@@ -82,30 +82,23 @@ module Sequence
     utr3 = transcript_3utr[transcript]
     phase = transcript_phase[transcript] || 0
     phase = phase.to_i
-  
     if phase < 0
       utr5 = - phase if utr5 == 0
       phase = 0
     end
-
     wt_aa_sequence = Bio::Sequence::NA.new(("N" * phase) << sequence[utr5..sequence.length-utr3-1]).translate
 
     triplet, codon_offset, codon_num = codon.split(":")
     codon_num = codon_num.to_i
     codon_offset = codon_offset.to_i
-    position = (utr5 - phase) + 3*(codon_num) + codon_offset
-
+    position = utr5 + 3*(codon_num) + codon_offset
     pre = sequence[0..position - 1]
     post = sequence[position..-1]
 
-    post = "" if post.nil?
-
     bases = mutation.split("")
 
-    insertion = bases.first != '-'
-
     while "-" == bases.first
-      post = post[1..-1] if post
+      post = post[1..-1] 
       bases.shift 
     end
 
@@ -114,30 +107,22 @@ module Sequence
       pre << post[0]
       post = post[1..-1] 
     end
-
-    post = "" if post.nil?
     post = (bases * "")  + post
 
     mut_sequence = pre + post
     mut_aa_sequence = Bio::Sequence::NA.new(("N" * phase) << mut_sequence[utr5..-1]).translate
-
     if index = mut_aa_sequence.index("*")
       mut_aa_sequence = mut_aa_sequence[0..index]
     end
 
-    #addition = false
-    #while mut_aa_sequence[codon_num] == wt_aa_sequence[codon_num] and ! mut_aa_sequence[codon_num].nil?
-    #  codon_num += 1
-    #end if insertion
+    while mut_aa_sequence[codon_num] == wt_aa_sequence[codon_num] and ! mut_aa_sequence[codon_num].nil?
+      codon_num += 1
+    end
 
     i = 1
     while i < mut_aa_sequence.length
       break if mut_aa_sequence[-i] != wt_aa_sequence[-i]
       i += 1
-    end
-
-    if mut_aa_sequence.length < codon_num
-      return ["?", codon_num, wt_aa_sequence[codon_num]]
     end
 
     lost = wt_aa_sequence[codon_num..-i].length
@@ -146,12 +131,6 @@ module Sequence
                else
                  mut_aa_sequence[codon_num..-1]
                end
-
-    raise mutation if sequence.nil?
-    if sequence[0] == '-' && wt_aa_sequence[codon_num] == sequence[1]
-        sequence[0..1] = "+"
-    end
-    sequence = "" if sequence == "+"
     [sequence, codon_num, wt_aa_sequence[codon_num]]
   end
 
@@ -257,7 +236,7 @@ module Sequence
   input *PRINCIPAL_INPUT
   input *NS_INPUT
   dep :transcript_offsets, :positions => :mutations
-  task :mutated_isoforms_old => :tsv do |mutations,organism,watson,vcf,principal,ns|
+  task :mutated_isoforms => :tsv do |mutations,organism,watson,vcf,principal,ns|
     mutations.close if IO === mutations
 
     transcript_protein = Sequence.transcript_protein(organism)
@@ -329,7 +308,7 @@ module Sequence
           end
         end
       end
-      mis.reject!{|mi| mi !~ /ENS.*P\d+:([A-Z*]+)\d+([A-Z*]+)/i or $1 == $2 } if ns
+      mis.reject!{|mi| mi !~ /ENSP\d+:([A-Z*]+)\d+([A-Z*]+)/i or $1 == $2 } if ns
       next if mis.empty?
 
       [mutation, mis]
