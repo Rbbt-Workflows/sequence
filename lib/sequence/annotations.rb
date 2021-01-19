@@ -5,7 +5,7 @@ module Sequence
   task :affected_genes => :tsv do
     organism = step(:mutated_isoforms_fast).inputs["organism"]
 
-    protein_index = Organism.protein_identifiers(organism).index :target => "Ensembl Gene ID", :fields => ["Ensembl Protein ID"], :persist => true
+    protein_index = Organism.transcripts(organism).index :target => "Ensembl Gene ID", :fields => ["Ensembl Protein ID"], :persist => true
     transcript_index = Organism.gene_transcripts(organism).index :target => "Ensembl Gene ID", :fields => ["Ensembl Transcript ID"], :persist => true
 
     pasted = TSV.paste_streams([step(:splicing_mutations), step(:mutated_isoforms_fast)], :sort => true)

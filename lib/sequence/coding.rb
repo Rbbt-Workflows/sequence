@@ -119,7 +119,8 @@ module Sequence
     post = (bases * "")  + post
 
     mut_sequence = pre + post
-    mut_aa_sequence = Bio::Sequence::NA.new(("N" * phase) << mut_sequence[utr5..-1]).translate
+    mut_cdna_sequence = ("N" * phase) << mut_sequence[utr5..-1]
+    mut_aa_sequence = Bio::Sequence::NA.new(mut_cdna_sequence).translate
 
     if index = mut_aa_sequence.index("*")
       mut_aa_sequence = mut_aa_sequence[0..index]
