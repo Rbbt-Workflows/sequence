@@ -225,7 +225,7 @@ module Sequence
   dep :mutated_isoforms_fast
   dep :exon_junctions, :positions => :mutations
   dep :genes, :positions => :mutations
-  dep :exons, :positions => :mutations
+  dep :exons, :positions => :mutations, :compute => :produce
   dep :TSS, :positions => :mutations
   dep :TES, :positions => :mutations
   task :sequence_ontology => :tsv do
