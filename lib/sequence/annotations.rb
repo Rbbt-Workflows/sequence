@@ -232,7 +232,7 @@ module Sequence
     Workflow.require_workflow "InterPro"
     so_term_order = Rbbt.share.databases.sequence_ontology.terms.tsv :fields => ["Order"], :type => :single, :cast => :to_i
     organism = step(:mutated_isoforms_fast).inputs[:organism]
-    dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Mutated Isoform", "MI SO Terms", "MUT SO Terms", "SO Term"], :type => :double, :namespace => organism
+    dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Ensembl Gene ID", "Mutated Isoform", "MI SO Terms", "MUT SO Terms", "SO Term"], :type => :double, :namespace => organism
     dumper.init
     pasted = TSV.paste_streams([step(:mutated_isoforms_fast), step(:exon_junctions), step(:genes), step(:exons), step(:TSS), step(:TES)], :fix_flat => true, :sort => true)
     TSV.traverse pasted, :into => dumper, :bar => "Sequence ontology" do |mut,values|
@@ -244,7 +244,10 @@ module Sequence
       so_terms = so_terms + [mut_so_terms] if mut_so_terms
       top_term = so_terms.sort_by{|t| so_term_order[t] || 1000}.first
 
-      [mut,[mis, mi_so_terms, mut_so_terms, [top_term]]]
+      g = genes
+      g = (up_genes || []) + (down_genes || []) if g.nil? || g.empty?
+      g = [] if g.nil?
+      [mut,[g, mis, mi_so_terms, mut_so_terms, [top_term]]]
     end
   end
   export_asynchronous :sequence_ontology
