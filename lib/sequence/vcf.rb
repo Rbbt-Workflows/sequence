@@ -233,6 +233,7 @@ module Sequence
   task :expanded_vcf => :tsv do |vcf,info,format,preamble|
     Sequence::VCF.open_stream(vcf, !info, !format,!preamble)
   end
+  export_stream :mutated_isoforms_fast
 
   dep :expanded_vcf, :info => false, :format => false, :preamble => false
   input :quality, :float, "Quality threshold", nil
