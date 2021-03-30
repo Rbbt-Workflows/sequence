@@ -248,6 +248,7 @@ module Sequence
       mutation
     end
   end
+  export_stream :genomic_mutations
 
   dep :expanded_vcf, :info => true, :format => true, :preamble => false 
   input :quality, :float, "Quality threshold", nil
