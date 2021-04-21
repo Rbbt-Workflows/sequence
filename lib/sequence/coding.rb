@@ -262,6 +262,7 @@ module Sequence
     mutations.close if IO === mutations
 
     transcript_protein = Sequence.transcript_protein(organism)
+    appris_principal_isoforms = Appris.principal_transcripts(organism) if principal
 
     dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Mutated Isoform"], :type => :flat, :namespace => organism
     dumper.init
@@ -278,7 +279,7 @@ module Sequence
         alleles = Sequence.alleles mut
 
         transcript_offsets.collect{|to| to.split ":" }.each do |transcript, transcript_offset, strand|
-          next if principal and not Appris::PRINCIPAL_TRANSCRIPTS.include?(transcript)
+          next if principal && appris_principal_isoforms && ! appris_principal_isoforms.include?(transcript)
           protein = transcript_protein[transcript]
           next if protein.nil? or protein.empty?
 
