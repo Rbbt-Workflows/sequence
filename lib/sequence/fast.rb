@@ -32,6 +32,7 @@ module Sequence
     cpus = config('cpus', 'mutated_isoforms', :default => 3)
     TSV.traverse mutations, :cpus => cpus.to_i, :bar => self.progress_bar("Mutated Iso. Fast"), :into => dumper, :type => :array do |mutation|
       next if mutation.nil?
+      raise RbbtException, "This is a VCF file, please specify that in the input" if mutation =~ /#.*VCF/
       chr, pos, mut_str = mutation.split(":")
       if blacklist_chromosomes.include? chr
         Log.low "Chromosome '#{chr}' is blacklisted"

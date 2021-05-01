@@ -179,6 +179,7 @@ module Sequence
     mutation_type.init
     TSV.traverse reference_job, :bar => "Type", :into => mutation_type do |mutation, reference|
       mutation = mutation.first if Array === mutation
+      raise RbbtException, "This is a VCF file, please specify that in the input" if mutation =~ /#.*VCF/
       base = mutation.split(":")[2]
 
       type = case
@@ -269,6 +270,7 @@ module Sequence
     TSV.traverse step(:transcript_offsets), :bar => "Mutated Isoforms", :into => dumper, :type => :flat do |mutation,transcript_offsets|
       mutation = mutation.first if Array === mutation
       next if mutation.nil?
+      raise RbbtException, "This is a VCF file, please specify that in the input" if mutation =~ /#.*VCF/
       chr, pos, mut_str = mutation.split(":")
       next if mut_str.nil?
       chr.sub!(/^chr/i,'')
@@ -409,6 +411,7 @@ module Sequence
     TSV.traverse step(:transcript_offsets), :bar => self.progress_bar("Mutated Isoforms"), :into => dumper, :type => :flat do |mutation,transcript_offsets|
       mutation = mutation.first if Array === mutation
       next if mutation.nil?
+      raise RbbtException, "This is a VCF file, please specify that in the input" if mutation =~ /#.*VCF/
       chr, pos, mut_str = mutation.split(":")
       next if mut_str.nil?
       chr.sub!(/^chr/i,'')
