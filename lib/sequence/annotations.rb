@@ -5,7 +5,7 @@ module Sequence
   task :affected_genes => :tsv do
     organism = step(:mutated_isoforms_fast).inputs["organism"]
 
-    protein_index = Organism.identifiers(organism).index :target => "Ensembl Gene ID", :fields => ["Ensembl Protein ID"], :persist => true
+    protein_index = Organism.transcripts(organism).index :target => "Ensembl Gene ID", :fields => ["Ensembl Protein ID"], :persist => true
     transcript_index = Organism.gene_transcripts(organism).index :target => "Ensembl Gene ID", :fields => ["Ensembl Transcript ID"], :persist => true
 
     pasted = TSV.paste_streams([step(:splicing_mutations), step(:mutated_isoforms_fast)], :sort => true)
@@ -17,7 +17,7 @@ module Sequence
       genes = rest.collect do |part|
         next if part.nil? or part.empty?
         e, c = part.split(":")
-        g = if e =~ /ENSP/
+        g = if e =~ /ENS.*P/
               next unless c =~ /^([A-Z*])\d+([A-Z*]+)/i and $1 != $2
               protein_index[e]
             else
@@ -225,14 +225,14 @@ module Sequence
   dep :mutated_isoforms_fast
   dep :exon_junctions, :positions => :mutations
   dep :genes, :positions => :mutations
-  dep :exons, :positions => :mutations
+  dep :exons, :positions => :mutations, :compute => :produce
   dep :TSS, :positions => :mutations
   dep :TES, :positions => :mutations
   task :sequence_ontology => :tsv do
     Workflow.require_workflow "InterPro"
     so_term_order = Rbbt.share.databases.sequence_ontology.terms.tsv :fields => ["Order"], :type => :single, :cast => :to_i
     organism = step(:mutated_isoforms_fast).inputs[:organism]
-    dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Mutated Isoform", "MI SO Terms", "MUT SO Terms", "SO Term"], :type => :double, :namespace => organism
+    dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Ensembl Gene ID", "Mutated Isoform", "MI SO Terms", "MUT SO Terms", "SO Term"], :type => :double, :namespace => organism
     dumper.init
     pasted = TSV.paste_streams([step(:mutated_isoforms_fast), step(:exon_junctions), step(:genes), step(:exons), step(:TSS), step(:TES)], :fix_flat => true, :sort => true)
     TSV.traverse pasted, :into => dumper, :bar => "Sequence ontology" do |mut,values|
@@ -244,7 +244,10 @@ module Sequence
       so_terms = so_terms + [mut_so_terms] if mut_so_terms
       top_term = so_terms.sort_by{|t| so_term_order[t] || 1000}.first
 
-      [mut,[mis, mi_so_terms, mut_so_terms, [top_term]]]
+      g = genes
+      g = (up_genes || []) + (down_genes || []) if g.nil? || g.empty?
+      g = [] if g.nil?
+      [mut,[g, mis, mi_so_terms, mut_so_terms, [top_term]]]
     end
   end
   export_asynchronous :sequence_ontology

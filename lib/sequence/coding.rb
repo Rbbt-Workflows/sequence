@@ -31,7 +31,7 @@ module Sequence
 
     utr5 = transcript_5utr[transcript]
       
-    if utr5.nil? or utr5 == 0 or utr5 == "0" 
+    if utr5.nil? || utr5 == 0 || utr5 == "0" 
       phase = transcript_phase[transcript]
       raise TranscriptError, "No UTR5 and no phase for transcript: #{ transcript }" if phase.nil?
       phase = phase.to_i
@@ -119,7 +119,8 @@ module Sequence
     post = (bases * "")  + post
 
     mut_sequence = pre + post
-    mut_aa_sequence = Bio::Sequence::NA.new(("N" * phase) << mut_sequence[utr5..-1]).translate
+    mut_cdna_sequence = ("N" * phase) << mut_sequence[utr5..-1]
+    mut_aa_sequence = Bio::Sequence::NA.new(mut_cdna_sequence).translate
 
     if index = mut_aa_sequence.index("*")
       mut_aa_sequence = mut_aa_sequence[0..index]
@@ -221,7 +222,7 @@ module Sequence
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Transcript position"], :type => :flat, :namespace => organism
     dumper.init
     
-    TSV.traverse step(:exons), :bar => "Transcript offsets", :into => dumper, :type => :flat do |position,exons|
+    TSV.traverse step(:exons), :bar => self.progress_bar("Transcript offsets"), :into => dumper, :type => :flat do |position,exons|
       position = position.first if Array === position
       next if position.nil?
       pos = position.split(":")[1]
@@ -261,6 +262,7 @@ module Sequence
     mutations.close if IO === mutations
 
     transcript_protein = Sequence.transcript_protein(organism)
+    appris_principal_isoforms = Appris.principal_transcripts(organism) if principal
 
     dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Mutated Isoform"], :type => :flat, :namespace => organism
     dumper.init
@@ -277,7 +279,7 @@ module Sequence
         alleles = Sequence.alleles mut
 
         transcript_offsets.collect{|to| to.split ":" }.each do |transcript, transcript_offset, strand|
-          next if principal and not Appris::PRINCIPAL_TRANSCRIPTS.include?(transcript)
+          next if principal && appris_principal_isoforms && ! appris_principal_isoforms.include?(transcript)
           protein = transcript_protein[transcript]
           next if protein.nil? or protein.empty?
 
@@ -329,7 +331,7 @@ module Sequence
           end
         end
       end
-      mis.reject!{|mi| mi !~ /ENSP\d+:([A-Z*]+)\d+([A-Z*]+)/i or $1 == $2 } if ns
+      mis.reject!{|mi| mi !~ /ENS.*P\d+:([A-Z*]+)\d+([A-Z*]+)/i or $1 == $2 } if ns
       next if mis.empty?
 
       [mutation, mis]
@@ -404,7 +406,7 @@ module Sequence
 
     dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Mutated Isoform"], :type => :flat, :namespace => organism
     dumper.init
-    TSV.traverse step(:transcript_offsets), :bar => "Mutated Isoforms", :into => dumper, :type => :flat do |mutation,transcript_offsets|
+    TSV.traverse step(:transcript_offsets), :bar => self.progress_bar("Mutated Isoforms"), :into => dumper, :type => :flat do |mutation,transcript_offsets|
       mutation = mutation.first if Array === mutation
       next if mutation.nil?
       chr, pos, mut_str = mutation.split(":")

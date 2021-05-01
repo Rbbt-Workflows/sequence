@@ -233,10 +233,11 @@ module Sequence
   task :expanded_vcf => :tsv do |vcf,info,format,preamble|
     Sequence::VCF.open_stream(vcf, !info, !format,!preamble)
   end
+  export_stream :expanded_vcf
 
   dep :expanded_vcf, :info => false, :format => false, :preamble => false
   input :quality, :float, "Quality threshold", nil
-  input :filters, :array, "Pass only", ["PASS"]
+  input :filters, :array, "Pass only", []
   task :genomic_mutations => :array do |quality,filters|
     expanded_vcf = step(:expanded_vcf)
 
@@ -247,6 +248,7 @@ module Sequence
       mutation
     end
   end
+  export_stream :genomic_mutations
 
   dep :expanded_vcf, :info => true, :format => true, :preamble => false 
   input :quality, :float, "Quality threshold", nil
@@ -280,15 +282,20 @@ module Sequence
   end
 
 
-  dep :reference, :full_reference_sequence => true, :compute => :produce do |jobname,options|
+  dep :reference, :full_reference_sequence => true, :compute => :produce, :vcf => false do |jobname,options|
     {:inputs => options, :jobname => jobname}
   end
   extension :vcf
-  task :mutations_to_vcf => :tsv do 
+  task :mutations_to_vcf => :text do 
     dumper =  TSV::Dumper.new :key_field => "CHROM", :fields => %w(POS ID REF ALT QUAL FILTER INFO), :type => :list
     dumper.init(:preamble => "##fileformat=VCFv4.1")
     TSV.traverse step(:reference), :into => dumper do |mutation, reference|
       chr, pos, alt = mutation.split(":")
+
+      if reference.nil? || reference.empty?
+        Log.warn "Reference not available for mutation #{mutation}"
+        next
+      end
 
       if alt[0] == "-" 
         alt = reference[0] + alt.gsub("-",'')
@@ -300,7 +307,7 @@ module Sequence
         alt[0] = reference[0]
       end
 
-      values = [pos, '.', reference, alt, nil, nil, nil]
+      values = [pos, '.', reference, alt, nil, ".", nil]
       [chr, values]
     end
   end

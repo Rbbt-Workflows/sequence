@@ -1,7 +1,5 @@
 module Sequence
 
-
-
   input *MUTATIONS_INPUT
   input *ORGANISM_INPUT
   input *WATSON_INPUT
@@ -23,6 +21,8 @@ module Sequence
     exon_position = Sequence.exon_position(organism)
     exon_transcript_offsets = Sequence.exon_transcript_offsets(organism)
     biotype = Sequence.transcript_biotype(organism)
+
+    appris_principal_isoforms = Appris.principal_transcripts(organism) if principal
 
     chromosome_files = {}
 
@@ -68,7 +68,7 @@ module Sequence
         alleles = Sequence.alleles mut
 
         transcript_offsets.collect{|to| to.split ":" }.each do |transcript, transcript_offset, strand|
-          next if principal and organism =~ /^Hsa/ and not Appris::PRINCIPAL_TRANSCRIPTS.include?(transcript)
+          next if principal && appris_principal_isoforms && ! appris_principal_isoforms.include?(transcript)
           protein = transcript_protein[transcript]
           next if protein.nil? or protein.empty?
 
