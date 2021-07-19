@@ -22,6 +22,8 @@ module Sequence
     exon_transcript_offsets = Sequence.exon_transcript_offsets(organism)
     biotype = Sequence.transcript_biotype(organism)
 
+    appris_principal_isoforms = Appris.principal_transcripts(organism) if principal
+
     chromosome_files = {}
 
     dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Mutated Isoform"], :type => :flat, :namespace => organism
@@ -30,6 +32,7 @@ module Sequence
     cpus = config('cpus', 'mutated_isoforms', :default => 3)
     TSV.traverse mutations, :cpus => cpus.to_i, :bar => self.progress_bar("Mutated Iso. Fast"), :into => dumper, :type => :array do |mutation|
       next if mutation.nil?
+      raise RbbtException, "This is a VCF file, please specify that in the input" if mutation =~ /#.*VCF/
       chr, pos, mut_str = mutation.split(":")
       if blacklist_chromosomes.include? chr
         Log.low "Chromosome '#{chr}' is blacklisted"
@@ -66,7 +69,7 @@ module Sequence
         alleles = Sequence.alleles mut
 
         transcript_offsets.collect{|to| to.split ":" }.each do |transcript, transcript_offset, strand|
-          next if principal and organism =~ /^Hsa/ and not Appris::PRINCIPAL_TRANSCRIPTS.include?(transcript)
+          next if principal && appris_principal_isoforms && ! appris_principal_isoforms.include?(transcript)
           protein = transcript_protein[transcript]
           next if protein.nil? or protein.empty?
 

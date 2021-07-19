@@ -17,6 +17,7 @@ module Sequence
 
     TSV.traverse positions, :bar => "Reference", :type => :array, :into => dumper do |position|
       begin
+        raise RbbtException, "This is a VCF file, please specify that in the input" if position =~ /#.*VCF/
         chr, pos, alt = position.split(/[\s:\t]+/)
         next if pos.nil?
         chr.sub!(/^chr/i,'')

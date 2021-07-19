@@ -19,6 +19,7 @@ module Sequence
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Ensembl Gene ID"], :type => :flat, :namespace => organism
     dumper.init
     TSV.traverse positions, :bar => "TSS", :type => :array, :into => dumper do |position|
+      raise RbbtException, "This is a VCF file, please specify that in the input" if position =~ /#.*VCF/
       chromosome, pos = position.split ":"
       next if pos.nil?
       chromosome.sub!(/^chr/i,'')
@@ -67,6 +68,7 @@ module Sequence
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Ensembl Gene ID"], :type => :flat, :namespace => organism
     dumper.init
     TSV.traverse positions, :bar => "TES", :type => :array, :into => dumper do |position|
+      raise RbbtException, "This is a VCF file, please specify that in the input" if position =~ /#.*VCF/
       chromosome, pos = position.split ":"
       next if pos.nil?
       chromosome.sub!(/^chr/i,'')

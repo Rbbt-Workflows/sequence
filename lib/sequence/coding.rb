@@ -179,6 +179,7 @@ module Sequence
     mutation_type.init
     TSV.traverse reference_job, :bar => "Type", :into => mutation_type do |mutation, reference|
       mutation = mutation.first if Array === mutation
+      raise RbbtException, "This is a VCF file, please specify that in the input" if mutation =~ /#.*VCF/
       base = mutation.split(":")[2]
 
       type = case
@@ -222,7 +223,7 @@ module Sequence
     dumper = TSV::Dumper.new :key_field => "Genomic Position", :fields => ["Transcript position"], :type => :flat, :namespace => organism
     dumper.init
     
-    TSV.traverse step(:exons), :bar => "Transcript offsets", :into => dumper, :type => :flat do |position,exons|
+    TSV.traverse step(:exons), :bar => self.progress_bar("Transcript offsets"), :into => dumper, :type => :flat do |position,exons|
       position = position.first if Array === position
       next if position.nil?
       pos = position.split(":")[1]
@@ -262,12 +263,14 @@ module Sequence
     mutations.close if IO === mutations
 
     transcript_protein = Sequence.transcript_protein(organism)
+    appris_principal_isoforms = Appris.principal_transcripts(organism) if principal
 
     dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Mutated Isoform"], :type => :flat, :namespace => organism
     dumper.init
     TSV.traverse step(:transcript_offsets), :bar => "Mutated Isoforms", :into => dumper, :type => :flat do |mutation,transcript_offsets|
       mutation = mutation.first if Array === mutation
       next if mutation.nil?
+      raise RbbtException, "This is a VCF file, please specify that in the input" if mutation =~ /#.*VCF/
       chr, pos, mut_str = mutation.split(":")
       next if mut_str.nil?
       chr.sub!(/^chr/i,'')
@@ -278,7 +281,7 @@ module Sequence
         alleles = Sequence.alleles mut
 
         transcript_offsets.collect{|to| to.split ":" }.each do |transcript, transcript_offset, strand|
-          next if principal and not Appris::PRINCIPAL_TRANSCRIPTS.include?(transcript)
+          next if principal && appris_principal_isoforms && ! appris_principal_isoforms.include?(transcript)
           protein = transcript_protein[transcript]
           next if protein.nil? or protein.empty?
 
@@ -405,9 +408,10 @@ module Sequence
 
     dumper = TSV::Dumper.new :key_field => "Genomic Mutation", :fields => ["Mutated Isoform"], :type => :flat, :namespace => organism
     dumper.init
-    TSV.traverse step(:transcript_offsets), :bar => "Mutated Isoforms", :into => dumper, :type => :flat do |mutation,transcript_offsets|
+    TSV.traverse step(:transcript_offsets), :bar => self.progress_bar("Mutated Isoforms"), :into => dumper, :type => :flat do |mutation,transcript_offsets|
       mutation = mutation.first if Array === mutation
       next if mutation.nil?
+      raise RbbtException, "This is a VCF file, please specify that in the input" if mutation =~ /#.*VCF/
       chr, pos, mut_str = mutation.split(":")
       next if mut_str.nil?
       chr.sub!(/^chr/i,'')
