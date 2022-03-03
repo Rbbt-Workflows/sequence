@@ -226,7 +226,7 @@ module Sequence
     end
   end
 
-  input :vcf_file, :text, "VCF file", nil, :stream => true
+  input :vcf_file, :file, "VCF file", nil, :stream => true
   input :info, :boolean, "Expand the INFO field", true
   input :format, :boolean, "Expand the sample FORMAT fields", true
   input :preamble, :boolean, "Retain file preamble (With field descriptions)", true
