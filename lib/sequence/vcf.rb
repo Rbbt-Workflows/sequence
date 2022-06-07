@@ -186,7 +186,7 @@ module Sequence
             chr, position, id, ref, alt, qual, filter, *rest = parts = line.split(/\t/,-1)
             orig = [chr,position,ref,alt] * ":"
 
-            chr.sub! 'chr', ''
+            chr.sub! /^chr/, ''
 
             position, alt = Misc.correct_vcf_mutation(position.to_i, ref, alt)
             mutation = [chr, position.to_s, alt * ","] * ":"
