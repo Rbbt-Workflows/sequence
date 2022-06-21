@@ -1,4 +1,3 @@
-require 'rbbt/util/R'
 
 module Sequence
 
@@ -14,6 +13,8 @@ module Sequence
     end
   end
   task :binomial_significance => :tsv do |mutations, organism, exome, num_samples|
+    require 'rbbt/util/R'
+
     mutations.join if Step === mutations
 
     if exome
@@ -99,6 +100,8 @@ module Sequence
 
   dep :genes
   task :binomial_significance_syn => :tsv do 
+    require 'rbbt/util/R'
+
     genes_step = step(:genes)
     organism = genes_step.info[:inputs][:organism]
 
