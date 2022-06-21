@@ -143,8 +143,12 @@ module Sequence
 
   input *RANGES_INPUT
   input *ORGANISM_INPUT
-  task :genes_at_ranges => :tsv do |ranges,organism|
+  input :full_overlap, :boolean, "Report only genes fully inside ranges", false
+  task :genes_at_ranges => :tsv do |ranges,organism,full_overlap|
     chromosome_files = {}
+
+    gene_positions = Organism.gene_positions(organism).produce.tsv :persist => true if full_overlap
+
     dumper = TSV::Dumper.new :key_field => "Chromosome Range", :fields => ["Ensembl Gene ID"], :type => :flat, :namespace => organism
     dumper.init
     TSV.traverse ranges, :type => :array, :into => dumper do |range|
@@ -153,6 +157,12 @@ module Sequence
       chr.sub!(/^chr/i,'')
       index = chromosome_files[chr] ||= Sequence.gene_chromosome_index(organism, chr)
       genes = index[(start.to_i..eend.to_i)]
+      if full_overlap 
+        genes.select! do |gene|
+          gchr, gstrand, gstart, geend = gene_positions[gene]
+          gstart.to_i <= start.to_i && geend.to_i >= eend.to_i
+        end
+      end
       [range, genes]
     end
   end
