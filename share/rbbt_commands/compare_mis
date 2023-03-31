@@ -28,7 +28,7 @@ end
 file1, file2 = ARGV
 
 Workflow.require_workflow "Appris"
-principal = Appris::PRINCIPAL_ISOFORMS
+principal = Appris.principal_isoform_list
 
 TSV.traverse TSV.paste_streams([file1, file2], :fix_flat => true) do |mut,values|
   mut = mut.first if Array === mut
