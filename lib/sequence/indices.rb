@@ -106,25 +106,25 @@ module Sequence
 
   def self.transcript_sequence(organism)
     Persist.memory("transcript_sequence", :key => organism, :repo => CACHE) do
-      Organism.transcript_sequence(organism).tsv(:single, :persist => true, :unnamed => true)
+      Organism.transcript_sequence(organism).tsv(type: :single, :persist => true, :unnamed => true)
     end
   end
 
   def self.transcript_5utr(organism)
     Persist.memory("transcript_5utr", :key => organism, :repo => CACHE) do
-       Organism.transcript_5utr(organism).tsv(:single, :persist => true, :unnamed => true)
+       Organism.transcript_5utr(organism).tsv(type: :single, :persist => true, :unnamed => true)
     end
   end
    
   def self.transcript_3utr(organism)
     Persist.memory("transcript_3utr", :key => organism, :repo => CACHE) do
-       Organism.transcript_3utr(organism).tsv(:single, :persist => true, :unnamed => true)
+       Organism.transcript_3utr(organism).tsv(type: :single, :persist => true, :unnamed => true)
     end
   end
 
   def self.transcript_phase(organism)
     Persist.memory("transcript_phase", :key => organism, :repo => CACHE, :persist => true) do
-      Organism.transcript_phase(organism).tsv(:single, :persist => true, :unnamed => true, :cast => nil)
+      Organism.transcript_phase(organism).tsv(type: :single, :persist => true, :unnamed => true, :cast => nil)
     end
   end
 
