@@ -422,7 +422,7 @@ module Sequence
         alleles = Sequence.alleles mut
 
         transcript_offsets.collect{|to| to.split ":" }.each do |transcript, transcript_offset, strand|
-          next if principal and not Appris::PRINCIPAL_TRANSCRIPTS.include?(transcript)
+          next if principal and not Appris.principal_transcript_list.include?(transcript)
           protein = transcript_protein[transcript]
           next if protein.nil? or protein.empty?
 

@@ -17,7 +17,7 @@ module Sequence
       size = rest_str.length
       max_size = size if size > max_size
       chr_file = chromosome_files[chr] ||= begin
-                                             FileUtils.mkdir_p file('tmp') unless File.exists? file('tmp')
+                                             FileUtils.mkdir_p file('tmp') unless File.exist? file('tmp')
                                              sout, sin = Misc.pipe 
                                              sort = CMD.cmd('sort -g -k 2 -t ":"', :in => sout, :pipe => true)
                                              t = Thread.new do
