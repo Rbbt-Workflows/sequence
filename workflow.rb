@@ -1,6 +1,4 @@
-require 'rbbt'
-require 'rbbt/workflow'
-
+require 'rbbt/sources/organism'
 Workflow.require_workflow "Appris"
 
 require 'sequence/indices'
