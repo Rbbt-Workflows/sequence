@@ -40,7 +40,7 @@ module Sequence
 
   def self.exon_end_index(organism, chromosome)
     Persist.memory("exon_end_index", :key => [organism,chromosome]*":", :repo => CACHE) do
-      TSV.pos_index(Organism.exons(organism).produce, "Exon Chr Start", :filters => [["field:Chromosome Name", chromosome]], :persist => true, :data_persist => true, :unnamed => true, :merge => true)
+      TSV.pos_index(Organism.exons(organism).produce, "Exon Chr End", :filters => [["field:Chromosome Name", chromosome]], :persist => true, :data_persist => true, :unnamed => true, :merge => true)
     end
   end
 
@@ -124,7 +124,7 @@ module Sequence
 
   def self.transcript_phase(organism)
     Persist.memory("transcript_phase", :key => organism, :repo => CACHE, :persist => true) do
-      Organism.transcript_phase(organism).tsv(type: :single, :persist => true, :unnamed => true, :cast => nil)
+      Organism.transcript_phase(organism).tsv(type: :single, :persist => true, :unnamed => true, :cast => false)
     end
   end
 

@@ -1,7 +1,7 @@
 module Sequence
 
-  dep :mutated_isoforms_fast
-  dep :splicing_mutations
+  dep :mutated_isoforms_fast, :stream => false
+  dep :splicing_mutations, :stream => false
   task :affected_genes => :tsv do
     organism = step(:mutated_isoforms_fast).inputs["organism"]
 

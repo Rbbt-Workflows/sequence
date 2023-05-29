@@ -24,13 +24,13 @@ module Sequence
   end
 
   def self.codon_at_transcript_position(organism, transcript, offset)
-    transcript_sequence ||= Sequence.transcript_sequence(organism)
-    transcript_5utr ||= Sequence.transcript_5utr(organism) 
-    transcript_3utr ||= Sequence.transcript_3utr(organism) 
-    transcript_phase ||= Sequence.transcript_phase(organism)
+    transcript_sequence ||= @@transcript_sequence ||= Sequence.transcript_sequence(organism)
+    transcript_5utr     ||= @@transcript_5utr     ||= Sequence.transcript_5utr(organism)
+    transcript_3utr     ||= @@transcript_3utr     ||= Sequence.transcript_3utr(organism)
+    transcript_phase    ||= @@transcript_phase    ||= Sequence.transcript_phase(organism)
 
     utr5 = transcript_5utr[transcript]
-      
+
     if utr5.nil? || utr5 == 0 || utr5 == "0" 
       phase = transcript_phase[transcript]
       raise TranscriptError, "No UTR5 and no phase for transcript: #{ transcript }" if phase.nil?
@@ -49,6 +49,7 @@ module Sequence
 
     sequence = transcript_sequence[transcript]
     raise "Sequence for transcript was missing: #{ transcript }" if sequence.nil? 
+
 
     ccds_offset = offset - utr5
     utr3 = transcript_3utr[transcript]
@@ -72,10 +73,10 @@ module Sequence
   end
 
   def self.downstream(organism, transcript, mutation, codon)
-    transcript_sequence ||= Sequence.transcript_sequence(organism)
-    transcript_5utr ||= Sequence.transcript_5utr(organism) 
-    transcript_3utr ||= Sequence.transcript_3utr(organism) 
-    transcript_phase ||= Sequence.transcript_phase(organism)
+    transcript_sequence ||=  @@transcript_sequence ||= Sequence.transcript_sequence(organism)
+    transcript_5utr     ||=  @@transcript_5utr     ||= Sequence.transcript_5utr(organism)
+    transcript_3utr     ||=  @@transcript_3utr     ||= Sequence.transcript_3utr(organism)
+    transcript_phase    ||=  @@transcript_phase    ||= Sequence.transcript_phase(organism)
 
     sequence = transcript_sequence[transcript]
     utr5 = transcript_5utr[transcript]
@@ -209,7 +210,7 @@ module Sequence
   end
   export_asynchronous :type
 
-  dep :exons
+  dep :exons, :stream => true
   task :transcript_offsets => :tsv do
     if dependencies.select{|d| d.task_name == :genomic_mutations}.any?
       mutations.close if IO === mutations
@@ -400,7 +401,7 @@ module Sequence
   input *VCF_INPUT
   input *PRINCIPAL_INPUT
   input *NS_INPUT
-  dep :transcript_offsets, :positions => :mutations
+  dep :transcript_offsets, :positions => :mutations, :stream => true
   task :mutated_isoforms => :tsv do |mutations,organism,watson,vcf,principal,ns|
     mutations.close if IO === mutations
 
