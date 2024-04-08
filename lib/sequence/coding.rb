@@ -354,6 +354,7 @@ module Sequence
     exon_junctions = step(:exon_junctions)
 
     organism = exon_junctions.inputs[:organism]
+    organism = organism.load if Step === organism
     transcript_exons = Sequence.transcript_exons(organism)
     exon_transcripts = Sequence.exon_transcripts(organism)
 
