@@ -67,7 +67,7 @@ module Sequence
 
   def self.exon_transcripts(organism)
     Persist.memory("exon_transcripts", :key => organism, :repo => CACHE) do
-      Organism.transcript_exons(organism).tsv(:key_field => "Ensembl Exon ID", :fields => ["Ensembl Transcript ID"], :type => :flat, :persist => true, :unnamed => true, :data_merge => true)
+      Organism.transcript_exons(organism).tsv(:key_field => "Ensembl Exon ID", :fields => ["Ensembl Transcript ID"], :type => :flat, :persist => true, :unnamed => true, :merge => true)
     end
   end
 
