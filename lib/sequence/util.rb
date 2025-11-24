@@ -20,7 +20,10 @@ module Sequence
   input :target, :string, "Target organism code and build", "Hsa/jan2013"
   task :lift_over => :array do |positions, source, target|
     raise ParameterException, "No positions given" if positions.nil?
-    positions = Open.read(positions).split("\n") if Misc.is_filename?(positions)
+    positions = Open.read(positions).split("\n") if Path.is_filename?(positions)
+    if positions.length == 1 && Path.is_filename?(positions.first)
+      positions = Open.read(positions.first).split("\n")
+    end
     Organism.liftOver(positions, source, target)
   end
 

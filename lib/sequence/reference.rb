@@ -25,6 +25,7 @@ module Sequence
         file = chromosome_files[chr] ||= begin
                                            Sequence.chromosome_file(organism, chr)
                                          rescue Exception
+                                           Log.info "Missing chromosome file for chr: #{$!.message}"
                                            :missing
                                          end
         next if file == :missing
